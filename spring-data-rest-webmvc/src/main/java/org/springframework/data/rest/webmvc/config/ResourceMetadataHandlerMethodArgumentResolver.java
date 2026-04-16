@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2025 the original author or authors.
+ * Copyright 2012-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,18 @@ package org.springframework.data.rest.webmvc.config;
 import static org.springframework.util.ClassUtils.*;
 import static org.springframework.util.StringUtils.*;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.core.MethodParameter;
 import org.springframework.data.repository.support.Repositories;
 import org.springframework.data.rest.core.mapping.ResourceMappings;
 import org.springframework.data.rest.core.mapping.ResourceMetadata;
 import org.springframework.data.rest.webmvc.BaseUri;
 import org.springframework.data.rest.webmvc.util.UriUtils;
+import org.springframework.http.HttpStatus;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.support.WebDataBinderFactory;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
@@ -69,8 +73,9 @@ public class ResourceMetadataHandlerMethodArgumentResolver implements HandlerMet
 	}
 
 	@Override
-	public ResourceMetadata resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer,
-			NativeWebRequest webRequest, WebDataBinderFactory binderFactory) throws Exception {
+	public @Nullable ResourceMetadata resolveArgument(MethodParameter parameter,
+			@Nullable ModelAndViewContainer mavContainer, NativeWebRequest webRequest,
+			@Nullable WebDataBinderFactory binderFactory) throws Exception {
 
 		String lookupPath = baseUri.getRepositoryLookupPath(webRequest);
 		String repositoryKey = UriUtils.findMappingVariable("repository", parameter.getMethod(), lookupPath);
@@ -81,11 +86,11 @@ public class ResourceMetadataHandlerMethodArgumentResolver implements HandlerMet
 
 		for (Class<?> domainType : repositories) {
 			ResourceMetadata mapping = mappings.getMetadataFor(domainType);
-			if (mapping.getPath().matches(repositoryKey) && mapping.isExported()) {
+			if (mapping != null && mapping.getPath().matches(repositoryKey) && mapping.isExported()) {
 				return mapping;
 			}
 		}
 
-		throw new IllegalArgumentException(String.format("Could not resolve repository metadata for %s.", repositoryKey));
+		throw new HttpClientErrorException(HttpStatus.NOT_FOUND);
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2025 the original author or authors.
+ * Copyright 2022-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package org.springframework.data.rest.webmvc.json;
 
+import tools.jackson.databind.ObjectMapper;
+
 import java.util.Optional;
 
 import org.springframework.core.convert.ConversionService;
@@ -25,13 +27,12 @@ import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.spel.support.SimpleEvaluationContext;
 import org.springframework.util.Assert;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 /**
  * A {@link BindContext} that uses a Jackson {@link ObjectMapper} to inspect its metadata to decide whether segments are
  * exposed or not.
  *
  * @author Oliver Drotbohm
+ * @author Mark Paluch
  */
 class JacksonBindContext implements BindContext {
 
@@ -61,7 +62,7 @@ class JacksonBindContext implements BindContext {
 	public Optional<String> getReadableProperty(String segment, Class<?> type) {
 
 		return getProperty(entities.getPersistentEntity(type)
-				.map(it -> MappedProperties.forSerialization(it, mapper))
+				.map(it -> MappedJacksonProperties.forSerialization(it, mapper))
 				.filter(it -> it.isReadableField(segment)), segment);
 	}
 
@@ -69,7 +70,7 @@ class JacksonBindContext implements BindContext {
 	public Optional<String> getWritableProperty(String segment, Class<?> type) {
 
 		return getProperty(entities.getPersistentEntity(type)
-				.map(it -> MappedProperties.forDeserialization(it, mapper))
+				.map(it -> MappedJacksonProperties.forDeserialization(it, mapper))
 				.filter(it -> it.isWritableField(segment)), segment);
 	}
 
@@ -82,7 +83,7 @@ class JacksonBindContext implements BindContext {
 		return context;
 	}
 
-	private static Optional<String> getProperty(Optional<MappedProperties> properties, String segment) {
+	private static Optional<String> getProperty(Optional<MappedJacksonProperties> properties, String segment) {
 
 		return properties.map(it -> it.getPersistentProperty(segment))
 				.map(PersistentProperty::getName);

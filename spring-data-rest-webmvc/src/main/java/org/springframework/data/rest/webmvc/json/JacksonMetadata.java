@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2025 the original author or authors.
+ * Copyright 2014-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,20 @@
  */
 package org.springframework.data.rest.webmvc.json;
 
+import tools.jackson.databind.BeanDescription;
+import tools.jackson.databind.DeserializationConfig;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationConfig;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.introspect.AnnotatedClass;
+import tools.jackson.databind.introspect.AnnotatedMember;
+import tools.jackson.databind.introspect.BeanPropertyDefinition;
+
 import java.util.Iterator;
 import java.util.List;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.data.mapping.PersistentProperty;
 import org.springframework.data.rest.core.annotation.Description;
@@ -26,23 +38,15 @@ import org.springframework.data.rest.core.mapping.ResourceMetadata;
 import org.springframework.data.rest.core.mapping.TypedResourceDescription;
 import org.springframework.util.Assert;
 
-import com.fasterxml.jackson.databind.BeanDescription;
-import com.fasterxml.jackson.databind.DeserializationConfig;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationConfig;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
-import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
-import com.fasterxml.jackson.databind.ser.DefaultSerializerProvider;
 
 /**
  * Value object to abstract Jackson based bean metadata of a given type.
  *
  * @author Oliver Gierke
  * @author Greg Turnquist
+ * @author Mark Paluch
+ * @since 5.0
  */
 public class JacksonMetadata implements Iterable<BeanPropertyDefinition> {
 
@@ -64,17 +68,21 @@ public class JacksonMetadata implements Iterable<BeanPropertyDefinition> {
 
 		this.mapper = mapper;
 
-		SerializationConfig serializationConfig = mapper.getSerializationConfig();
+		SerializationConfig serializationConfig = mapper.serializationConfig();
 		JavaType javaType = serializationConfig.constructType(type);
-		BeanDescription description = serializationConfig.introspect(javaType);
+		AnnotatedClass annotatedClass = serializationConfig.classIntrospectorInstance()
+				.introspectClassAnnotations(javaType);
+		BeanDescription description = serializationConfig.classIntrospectorInstance().introspectForSerialization(javaType,
+				annotatedClass);
 
 		this.definitions = description.findProperties();
 		this.isValue = description.findJsonValueAccessor() != null;
 
-		DeserializationConfig deserializationConfig = mapper.getDeserializationConfig();
+		DeserializationConfig deserializationConfig = mapper.deserializationConfig();
 		JavaType deserializationType = deserializationConfig.constructType(type);
 
-		this.deserializationDefinitions = deserializationConfig.introspect(deserializationType).findProperties();
+		this.deserializationDefinitions = deserializationConfig.classIntrospectorInstance()
+				.introspectForDeserialization(deserializationType, annotatedClass).findProperties();
 	}
 
 	/**
@@ -84,7 +92,7 @@ public class JacksonMetadata implements Iterable<BeanPropertyDefinition> {
 	 * @return can be {@literal null} in case there's no Jackson property to be exposed for the given
 	 *         {@link PersistentProperty}.
 	 */
-	public BeanPropertyDefinition getDefinitionFor(PersistentProperty<?> property) {
+	public @Nullable BeanPropertyDefinition getDefinitionFor(PersistentProperty<?> property) {
 
 		Assert.notNull(property, "PersistentProperty must not be null");
 
@@ -151,26 +159,11 @@ public class JacksonMetadata implements Iterable<BeanPropertyDefinition> {
 	 * @param type must not be {@literal null}.
 	 * @return
 	 */
-	public JsonSerializer<?> getTypeSerializer(Class<?> type) {
+	public ValueSerializer<?> getTypeSerializer(Class<?> type) {
 
 		Assert.notNull(type, "Type must not be null");
 
-		try {
-
-			SerializerProvider provider = mapper.getSerializerProvider();
-
-			if (!(provider instanceof DefaultSerializerProvider)) {
-				return null;
-			}
-
-			provider = ((DefaultSerializerProvider) provider).createInstance(mapper.getSerializationConfig(),
-					mapper.getSerializerFactory());
-
-			return provider.findValueSerializer(type);
-
-		} catch (JsonMappingException o_O) {
-			return null;
-		}
+		return mapper._serializationContext().findValueSerializer(type);
 	}
 
 	@Override
@@ -185,7 +178,7 @@ public class JacksonMetadata implements Iterable<BeanPropertyDefinition> {
 	 * @param definitions must not be {@literal null}.
 	 * @return
 	 */
-	private static BeanPropertyDefinition getDefinitionFor(PersistentProperty<?> property,
+	private static @Nullable BeanPropertyDefinition getDefinitionFor(PersistentProperty<?> property,
 			Iterable<BeanPropertyDefinition> definitions) {
 
 		for (BeanPropertyDefinition definition : definitions) {

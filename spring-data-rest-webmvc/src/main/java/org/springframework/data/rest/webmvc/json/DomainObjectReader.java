@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2025 the original author or authors.
+ * Copyright 2014-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,12 @@
  */
 package org.springframework.data.rest.webmvc.json;
 
-import java.io.IOException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
+
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,10 +32,13 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.function.IntFunction;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.beans.PropertyAccessor;
 import org.springframework.beans.PropertyAccessorFactory;
 import org.springframework.core.CollectionFactory;
 import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.data.core.TypeInformation;
 import org.springframework.data.mapping.Association;
 import org.springframework.data.mapping.PersistentEntity;
 import org.springframework.data.mapping.PersistentProperty;
@@ -41,18 +49,10 @@ import org.springframework.data.mapping.context.PersistentEntities;
 import org.springframework.data.mapping.model.ConvertingPropertyAccessor;
 import org.springframework.data.rest.webmvc.mapping.Associations;
 import org.springframework.data.rest.webmvc.util.InputStreamHttpInputMessage;
-import org.springframework.data.util.ClassTypeInformation;
-import org.springframework.data.util.TypeInformation;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ObjectUtils;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Component to apply an {@link ObjectNode} to an existing domain object. This is effectively a best-effort workaround
@@ -67,6 +67,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  * @author Lars Vierbergen
  * @since 2.2
  */
+@SuppressWarnings("NullAway")
 public class DomainObjectReader {
 
 	private final PersistentEntities entities;
@@ -140,14 +141,13 @@ public class DomainObjectReader {
 
 		boolean isTypeChange = !source.getClass().isInstance(target);
 
-		boolean immutableTarget = entities.getPersistentEntity(target.getClass())
-				.map(PersistentEntity::isImmutable)
+		boolean immutableTarget = entities.getPersistentEntity(target.getClass()).map(PersistentEntity::isImmutable)
 				.orElse(true); // Not a Spring Data managed type -> no detailed merging
 
 		return entities.getPersistentEntity(isTypeChange ? source.getClass() : target.getClass()) //
 				.map(it -> {
 
-					MappedProperties properties = MappedProperties.forDeserialization(it, mapper);
+					MappedJacksonProperties properties = MappedJacksonProperties.forDeserialization(it, mapper);
 
 					if (isTypeChange || immutableTarget || it.isImmutable()) {
 
@@ -213,7 +213,8 @@ public class DomainObjectReader {
 		try {
 			return doMerge(source, target, mapper);
 		} catch (Exception o_O) {
-			throw new HttpMessageNotReadableException("Could not read payload", o_O);
+			throw new HttpMessageNotReadableException("Could not read payload", o_O,
+					InputStreamHttpInputMessage.of(() -> new ByteArrayInputStream(mapper.writeValueAsBytes(source))));
 		}
 	}
 
@@ -241,10 +242,10 @@ public class DomainObjectReader {
 		}
 
 		PersistentEntity<?, ?> entity = candidate.get();
-		MappedProperties mappedProperties = MappedProperties.forDeserialization(entity, mapper);
+		MappedJacksonProperties mappedProperties = MappedJacksonProperties.forDeserialization(entity, mapper);
 		PersistentPropertyAccessor<?> accessor = entity.getPropertyAccessor(target);
 
-		for (Iterator<Entry<String, JsonNode>> i = root.fields(); i.hasNext();) {
+		for (Iterator<Entry<String, JsonNode>> i = root.properties().iterator(); i.hasNext();) {
 
 			Entry<String, JsonNode> entry = i.next();
 			JsonNode child = entry.getValue();
@@ -284,7 +285,7 @@ public class DomainObjectReader {
 					if (property.isMap()) {
 
 						// Keep empty Map to wipe it as expected
-						if (!objectNode.fieldNames().hasNext()) {
+						if (objectNode.properties().isEmpty()) {
 							return;
 						}
 
@@ -292,7 +293,7 @@ public class DomainObjectReader {
 								() -> doMergeNestedMap((Map<Object, Object>) it, objectNode, mapper, property.getTypeInformation()));
 
 						// Remove potentially emptied Map as values have been handled recursively
-						if (!objectNode.fieldNames().hasNext()) {
+						if (objectNode.properties().isEmpty()) {
 							i.remove();
 						}
 
@@ -312,12 +313,7 @@ public class DomainObjectReader {
 
 	private static Object readRawCollectionElement(Class<?> elementType, String fieldName, int index, JsonNode root,
 			ObjectMapper mapper) {
-
-		try {
-			return mapper.readerFor(elementType).at("/" + fieldName + "/" + index).readValue(root);
-		} catch (IOException o_O) {
-			throw new RuntimeException(o_O);
-		}
+		return mapper.readerFor(elementType).at("/" + fieldName + "/" + index).readValue(root);
 	}
 
 	/**
@@ -362,11 +358,8 @@ public class DomainObjectReader {
 		Assert.notNull(mapper, "ObjectMapper must not be null");
 
 		// Empty collection? Primitive? Enum? No need to merge.
-		if (array.isEmpty()
-				|| collection.isEmpty()
-				|| ClassUtils.isPrimitiveOrWrapper(componentType.getType())
-				|| componentType.getType().isEnum()
-				|| entities.getPersistentEntity(componentType.getType()).isEmpty()) {
+		if (array.isEmpty() || collection.isEmpty() || ClassUtils.isPrimitiveOrWrapper(componentType.getType())
+				|| componentType.getType().isEnum() || entities.getPersistentEntity(componentType.getType()).isEmpty()) {
 			return false;
 		}
 
@@ -386,9 +379,8 @@ public class DomainObjectReader {
 				nestedObjectFound = true;
 
 				// Use pre-read values if available. Deserialize node otherwise.
-				collection.add(rawValues != null
-						? rawValues.apply(current)
-						: mapper.treeToValue(jsonNode, componentType.getType()));
+				collection
+						.add(rawValues != null ? rawValues.apply(current) : mapper.treeToValue(jsonNode, componentType.getType()));
 
 				continue;
 			}
@@ -429,7 +421,7 @@ public class DomainObjectReader {
 			return;
 		}
 
-		Iterator<Entry<String, JsonNode>> fields = node.fields();
+		Iterator<Entry<String, JsonNode>> fields = node.properties().iterator();
 		Class<?> keyType = typeOrObject(type.getComponentType());
 		TypeInformation<?> valueType = type.getMapValueType();
 
@@ -597,7 +589,7 @@ public class DomainObjectReader {
 	private static TypeInformation<?> getTypeToMap(Object value, TypeInformation<?> type) {
 
 		if (type == null) {
-			return ClassTypeInformation.OBJECT;
+			return TypeInformation.OBJECT;
 		}
 
 		if (value == null) {
@@ -605,11 +597,10 @@ public class DomainObjectReader {
 		}
 
 		if (Enum.class.isInstance(value)) {
-			return ClassTypeInformation.from(((Enum<?>) value).getDeclaringClass());
+			return TypeInformation.of(((Enum<?>) value).getDeclaringClass());
 		}
 
-		return value.getClass().equals(type.getType()) ? type : ClassTypeInformation.from(value.getClass());
-
+		return value.getClass().equals(type.getType()) ? type : TypeInformation.of(value.getClass());
 	}
 
 	/**
@@ -650,7 +641,7 @@ public class DomainObjectReader {
 	 */
 	private class MergingPropertyHandler implements SimplePropertyHandler {
 
-		private final MappedProperties properties;
+		private final MappedJacksonProperties properties;
 		private final PersistentPropertyAccessor<?> targetAccessor;
 		private final PersistentPropertyAccessor<?> sourceAccessor;
 		private final ObjectMapper mapper;
@@ -671,14 +662,14 @@ public class DomainObjectReader {
 			Assert.notNull(entity, "PersistentEntity must not be null");
 			Assert.notNull(mapper, "ObjectMapper must not be null");
 
-			this.properties = MappedProperties.forDeserialization(entity, mapper);
+			this.properties = MappedJacksonProperties.forDeserialization(entity, mapper);
 			this.targetAccessor = new ConvertingPropertyAccessor<>(entity.getPropertyAccessor(target),
 					new DefaultConversionService());
 			this.sourceAccessor = entity.getPropertyAccessor(source);
 			this.mapper = mapper;
 		}
 
-		public MappedProperties getProperties() {
+		public MappedJacksonProperties getProperties() {
 			return this.properties;
 		}
 
@@ -709,8 +700,7 @@ public class DomainObjectReader {
 				result = mergeCollections(property, sourceValue, targetValue, mapper);
 			} else if (property.isEntity()) {
 
-				result = targetValue.isEmpty()
-						? sourceValue
+				result = targetValue.isEmpty() ? sourceValue
 						: targetValue.flatMap(t -> sourceValue.map(s -> mergeForPut(s, t, mapper)));
 			} else {
 				result = sourceValue;

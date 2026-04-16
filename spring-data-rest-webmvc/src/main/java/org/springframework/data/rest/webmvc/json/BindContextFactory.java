@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2025 the original author or authors.
+ * Copyright 2022-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,9 @@
  */
 package org.springframework.data.rest.webmvc.json;
 
-import org.springframework.data.rest.webmvc.json.patch.BindContext;
+import tools.jackson.databind.ObjectMapper;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.data.rest.webmvc.json.patch.BindContext;
 
 /**
  * Factory to create {@link BindContext} instances.

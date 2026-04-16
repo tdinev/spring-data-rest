@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2025 the original author or authors.
+ * Copyright 2012-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.hateoas.CollectionModel;
@@ -52,7 +54,7 @@ public class UriListHttpMessageConverter implements HttpMessageConverter<Represe
 	}
 
 	@Override
-	public boolean canRead(Class<?> clazz, MediaType mediaType) {
+	public boolean canRead(Class<?> clazz, @Nullable MediaType mediaType) {
 
 		return null != mediaType //
 				&& RepresentationModel.class.isAssignableFrom(clazz) //
@@ -60,7 +62,7 @@ public class UriListHttpMessageConverter implements HttpMessageConverter<Represe
 	}
 
 	@Override
-	public boolean canWrite(Class<?> clazz, MediaType mediaType) {
+	public boolean canWrite(Class<?> clazz, @Nullable MediaType mediaType) {
 		return canRead(clazz, mediaType);
 	}
 
@@ -84,7 +86,7 @@ public class UriListHttpMessageConverter implements HttpMessageConverter<Represe
 	}
 
 	@Override
-	public void write(RepresentationModel<?> resource, MediaType contentType, HttpOutputMessage outputMessage)
+	public void write(RepresentationModel<?> resource, @Nullable MediaType contentType, HttpOutputMessage outputMessage)
 			throws IOException, HttpMessageNotWritableException {
 
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputMessage.getBody()));

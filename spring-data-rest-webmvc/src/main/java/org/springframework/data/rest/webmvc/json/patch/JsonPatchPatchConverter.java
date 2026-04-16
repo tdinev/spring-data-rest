@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2025 the original author or authors.
+ * Copyright 2014-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,17 @@
  */
 package org.springframework.data.rest.webmvc.json.patch;
 
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.springframework.util.Assert;
+import org.jspecify.annotations.Nullable;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+import org.springframework.util.Assert;
 
 /**
  * Convert {@link JsonNode}s containing JSON Patch to/from {@link Patch} objects.
@@ -61,7 +63,7 @@ public class JsonPatchPatchConverter implements PatchConverter<JsonNode> {
 		ArrayNode opNodes = (ArrayNode) jsonNode;
 		List<PatchOperation> ops = new ArrayList<PatchOperation>(opNodes.size());
 
-		for (Iterator<JsonNode> elements = opNodes.elements(); elements.hasNext();) {
+		for (Iterator<JsonNode> elements = opNodes.iterator(); elements.hasNext();) {
 
 			JsonNode opNode = elements.next();
 
@@ -92,7 +94,7 @@ public class JsonPatchPatchConverter implements PatchConverter<JsonNode> {
 		return new Patch(ops, context);
 	}
 
-	private Object valueFromJsonNode(String path, JsonNode valueNode) {
+	private @Nullable Object valueFromJsonNode(String path, @Nullable JsonNode valueNode) {
 
 		if (valueNode == null || valueNode.isNull()) {
 			return null;

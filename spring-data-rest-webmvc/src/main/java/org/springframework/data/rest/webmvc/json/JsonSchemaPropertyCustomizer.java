@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2025 the original author or authors.
+ * Copyright 2015-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 package org.springframework.data.rest.webmvc.json;
 
+import org.springframework.data.core.TypeInformation;
 import org.springframework.data.rest.webmvc.json.JsonSchema.JsonSchemaProperty;
-import org.springframework.data.util.TypeInformation;
 
 /**
  * Callback interface to customize the {@link JsonSchemaProperty} created by default for a given type.

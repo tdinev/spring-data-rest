@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,24 +15,44 @@
  */
 package org.springframework.data.rest.webmvc.aot;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
-import org.springframework.data.rest.webmvc.json.PersistentEntityJackson2Module.AssociationUriResolvingDeserializerModifier.ValueInstantiatorCustomizer;
+import org.springframework.data.rest.webmvc.json.PersistentEntityJackson2Module;
+import org.springframework.data.rest.webmvc.json.PersistentEntityJacksonModule;
+import org.springframework.util.ClassUtils;
 
 import com.fasterxml.jackson.databind.deser.std.StdValueInstantiator;
 
 /**
  * Registers the {@link StdValueInstantiator}'s {@code _constructorArgs} field for reflection as needed by
- * {@link ValueInstantiatorCustomizer}.
+ * {@code ValueInstantiatorCustomizer}.
  *
  * @author Oliver Drotbohm
+ * @author Mark Paluch
  * @since 4.0.2
  * @soundtrack The Intersphere - Wanderer (https://www.youtube.com/watch?v=Sp_VyFBbDPA)
  */
+@SuppressWarnings("removal")
 class ValueInstantiatorCustomizerRuntimeHints implements RuntimeHintsRegistrar {
 
 	@Override
-	public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
-		hints.reflection().registerField(ValueInstantiatorCustomizer.CONSTRUCTOR_ARGS_FIELD);
+	public void registerHints(RuntimeHints hints, @Nullable ClassLoader classLoader) {
+
+		if (ClassUtils.isPresent("tools.jackson.databind.ObjectMapper", classLoader)) {
+			if (PersistentEntityJacksonModule.AssociationUriResolvingDeserializerModifier.ValueInstantiatorCustomizer.CONSTRUCTOR_ARGS_FIELD != null) {
+				hints.reflection().registerField(
+						PersistentEntityJacksonModule.AssociationUriResolvingDeserializerModifier.ValueInstantiatorCustomizer.CONSTRUCTOR_ARGS_FIELD);
+			}
+		}
+
+		if (ClassUtils.isPresent("com.fasterxml.jackson.databind.ObjectMapper", classLoader)) {
+
+			if (PersistentEntityJackson2Module.AssociationUriResolvingDeserializerModifier.ValueInstantiatorCustomizer.CONSTRUCTOR_ARGS_FIELD != null) {
+				hints.reflection().registerField(
+						PersistentEntityJackson2Module.AssociationUriResolvingDeserializerModifier.ValueInstantiatorCustomizer.CONSTRUCTOR_ARGS_FIELD);
+			}
+		}
 	}
 }

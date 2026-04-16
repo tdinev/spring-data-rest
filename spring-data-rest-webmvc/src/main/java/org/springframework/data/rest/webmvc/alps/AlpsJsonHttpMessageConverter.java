@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2025 the original author or authors.
+ * Copyright 2014-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package org.springframework.data.rest.webmvc.alps;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Collections;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.MethodParameter;
 import org.springframework.core.convert.converter.Converter;
@@ -41,7 +43,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *
  * @author Oliver Gierke
  * @author Greg Turnquist
+ * @deprecated since 5.0, in favor of {@link AlpsJacksonJsonHttpMessageConverter}.
  */
+@Deprecated(since = "5.0", forRemoval = true)
 public class AlpsJsonHttpMessageConverter extends MappingJackson2HttpMessageConverter
 		implements ResponseBodyAdvice<Object> {
 
@@ -66,23 +70,24 @@ public class AlpsJsonHttpMessageConverter extends MappingJackson2HttpMessageConv
 	}
 
 	@Override
-	public boolean canWrite(Class<?> clazz, MediaType mediaType) {
+	public boolean canWrite(Class<?> clazz, @Nullable MediaType mediaType) {
 		return (clazz.isAssignableFrom(Alps.class) || clazz.isAssignableFrom(RootResourceInformation.class))
 				&& super.canWrite(clazz, mediaType);
 	}
 
 	@Override
-	public boolean canWrite(Type type, Class<?> clazz, MediaType mediaType) {
+	public boolean canWrite(@Nullable Type type, Class<?> clazz, @Nullable MediaType mediaType) {
 		return canWrite(clazz, mediaType);
 	}
 
 	@Override
-	public boolean canRead(Type type, Class<?> contextClass, MediaType mediaType) {
+	public boolean canRead(Type type, @Nullable Class<?> contextClass, @Nullable MediaType mediaType) {
 		return false;
 	}
 
 	@Override
-	public Object beforeBodyWrite(Object body, MethodParameter returnType, MediaType selectedContentType,
+	public @Nullable Object beforeBodyWrite(@Nullable Object body, MethodParameter returnType,
+			MediaType selectedContentType,
 			Class<? extends HttpMessageConverter<?>> selectedConverterType, ServerHttpRequest request,
 			ServerHttpResponse response) {
 

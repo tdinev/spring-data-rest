@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 the original author or authors.
+ * Copyright 2021-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import java.util.Arrays;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -28,14 +29,13 @@ import org.springframework.hateoas.Link;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.RepresentationModel;
 import org.springframework.hateoas.mediatype.Affordances;
-import org.springframework.hateoas.server.mvc.TypeConstrainedMappingJackson2HttpMessageConverter;
+import org.springframework.hateoas.server.mvc.TypeConstrainedJacksonJsonHttpMessageConverter;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.http.server.ServletServerHttpResponse;
-import org.springframework.lang.Nullable;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.web.HttpMediaTypeNotAcceptableException;
@@ -57,7 +57,7 @@ class HalFormsAdaptingResponseBodyAdviceTests<T extends RepresentationModel<T>> 
 	@Test // #2060
 	void supportsTypeConstraintedHttpMessageConverterOnly() {
 
-		assertThat(advice.supports(parameter, TypeConstrainedMappingJackson2HttpMessageConverter.class)).isTrue();
+		assertThat(advice.supports(parameter, TypeConstrainedJacksonJsonHttpMessageConverter.class)).isTrue();
 		assertThat(advice.supports(parameter, MappingJackson2HttpMessageConverter.class)).isFalse();
 	}
 
@@ -111,7 +111,7 @@ class HalFormsAdaptingResponseBodyAdviceTests<T extends RepresentationModel<T>> 
 		ServletServerHttpResponse response = new ServletServerHttpResponse(this.response);
 
 		advice.beforeBodyWrite(model, parameter, MediaTypes.HAL_FORMS_JSON,
-				TypeConstrainedMappingJackson2HttpMessageConverter.class,
+				TypeConstrainedJacksonJsonHttpMessageConverter.class,
 				new ServletServerHttpRequest(request), response);
 
 		assertThat(response.getHeaders().getContentType()).isEqualTo(mediaType);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 the original author or authors.
+ * Copyright 2017-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+
 import org.springframework.core.MethodParameter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.keyvalue.core.mapping.KeyValuePersistentEntity;
@@ -35,8 +36,8 @@ import org.springframework.data.repository.support.RepositoryInvoker;
 import org.springframework.data.rest.core.support.EntityLookup;
 import org.springframework.data.rest.webmvc.PersistentEntityResource;
 import org.springframework.data.rest.webmvc.RootResourceInformation;
-import org.springframework.data.rest.webmvc.json.DomainObjectReader;
 import org.springframework.data.rest.webmvc.json.BindContextFactory;
+import org.springframework.data.rest.webmvc.json.DomainObjectReader;
 import org.springframework.data.rest.webmvc.json.patch.TestPropertyPathContext;
 import org.springframework.data.rest.webmvc.support.BackendIdHandlerMethodArgumentResolver;
 import org.springframework.http.HttpInputMessage;
@@ -134,6 +135,7 @@ class PersistentEntityResourceHandlerMethodArgumentResolverUnitTests {
 		KeyValuePersistentEntity<?, ?> entity = context.getRequiredPersistentEntity(Foo.class);
 
 		doReturn(entity).when(information).getPersistentEntity();
+		doReturn(mock(RepositoryInvoker.class)).when(information).getRequiredInvoker();
 		doReturn(mock(RepositoryInvoker.class)).when(information).getInvoker();
 	}
 

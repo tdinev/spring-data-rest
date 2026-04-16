@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2025 the original author or authors.
+ * Copyright 2012-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,16 @@
 package org.springframework.data.rest.webmvc.config;
 
 import jakarta.servlet.http.HttpServletRequest;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.core.MethodParameter;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.support.DefaultConversionService;
@@ -41,9 +45,10 @@ import org.springframework.data.rest.webmvc.json.DomainObjectReader;
 import org.springframework.data.rest.webmvc.support.BackendIdHandlerMethodArgumentResolver;
 import org.springframework.hateoas.RepresentationModel;
 import org.springframework.http.MediaType;
+import org.springframework.http.converter.AbstractJacksonHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.plugin.core.PluginRegistry;
 import org.springframework.util.Assert;
@@ -52,15 +57,12 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
 /**
  * Custom {@link HandlerMethodArgumentResolver} to create {@link PersistentEntityResource} instances.
  *
  * @author Jon Brisbin
  * @author Oliver Gierke
+ * @author Mark Paluch
  */
 public class PersistentEntityResourceHandlerMethodArgumentResolver implements HandlerMethodArgumentResolver {
 
@@ -100,13 +102,22 @@ public class PersistentEntityResourceHandlerMethodArgumentResolver implements Ha
 
 	@Override
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer,
-			NativeWebRequest webRequest, WebDataBinderFactory binderFactory) throws Exception {
+	public @Nullable Object resolveArgument(MethodParameter parameter, @Nullable ModelAndViewContainer mavContainer,
+			NativeWebRequest webRequest, @Nullable WebDataBinderFactory binderFactory) throws Exception {
 
 		RootResourceInformation resourceInformation = resourceInformationResolver.resolveArgument(parameter, mavContainer,
 				webRequest, binderFactory);
 
 		HttpServletRequest nativeRequest = webRequest.getNativeRequest(HttpServletRequest.class);
+		if (nativeRequest == null) {
+			throw new IllegalStateException("No HttpServletRequest found in the current request context");
+		}
+
+		if (resourceInformation == null) {
+			throw new IllegalStateException(
+					"Could not resolve RootResourceInformation for parameter '%s'".formatted(parameter.getParameterName()));
+		}
+
 		ServletServerHttpRequest request = new ServletServerHttpRequest(nativeRequest);
 		IncomingRequest incoming = new IncomingRequest(request);
 
@@ -121,7 +132,7 @@ public class PersistentEntityResourceHandlerMethodArgumentResolver implements Ha
 
 			Optional<Serializable> id = Optional
 					.ofNullable(idResolver.resolveArgument(parameter, mavContainer, webRequest, binderFactory));
-			Optional<Object> objectToUpdate = id.flatMap(it -> resourceInformation.getInvoker().invokeFindById(it));
+			Optional<Object> objectToUpdate = id.flatMap(it -> resourceInformation.getRequiredInvoker().invokeFindById(it));
 			Object newObject = read(resourceInformation, incoming, converter, objectToUpdate);
 
 			if (newObject == null) {
@@ -177,19 +188,19 @@ public class PersistentEntityResourceHandlerMethodArgumentResolver implements Ha
 			HttpMessageConverter<Object> converter, Optional<Object> objectToUpdate) {
 
 		// JSON + PATCH request
-		if (request.isPatchRequest() && converter instanceof MappingJackson2HttpMessageConverter) {
+		if (request.isPatchRequest() && converter instanceof JacksonJsonHttpMessageConverter c) {
 
 			return objectToUpdate.map(it -> {
 
-				ObjectMapper mapper = ((MappingJackson2HttpMessageConverter) converter).getObjectMapper();
+				ObjectMapper mapper = c.getMapper();
 				return readPatch(request, mapper, it);
 
 			}).orElseThrow(() -> new ResourceNotFoundException());
 
 			// JSON + PUT request
-		} else if (converter instanceof MappingJackson2HttpMessageConverter) {
+		} else if (converter instanceof AbstractJacksonHttpMessageConverter c) {
 
-			ObjectMapper mapper = ((MappingJackson2HttpMessageConverter) converter).getObjectMapper();
+			ObjectMapper mapper = c.getMapper();
 
 			return objectToUpdate.map(it -> readPutForUpdate(request, mapper, it))//
 					.orElseGet(() -> read(request, converter, information));

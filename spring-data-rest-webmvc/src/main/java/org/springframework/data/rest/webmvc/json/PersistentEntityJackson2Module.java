@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2025 the original author or authors.
+ * Copyright 2012-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package org.springframework.data.rest.webmvc.json;
 
 import java.io.IOException;
+import java.io.Serial;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.util.ArrayList;
@@ -24,12 +25,16 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import org.springframework.core.CollectionFactory;
 import org.springframework.core.convert.TypeDescriptor;
+import org.springframework.data.core.TypeInformation;
 import org.springframework.data.mapping.PersistentEntity;
 import org.springframework.data.mapping.PersistentProperty;
 import org.springframework.data.mapping.context.PersistentEntities;
@@ -37,14 +42,13 @@ import org.springframework.data.projection.TargetAware;
 import org.springframework.data.repository.support.RepositoryInvoker;
 import org.springframework.data.repository.support.RepositoryInvokerFactory;
 import org.springframework.data.rest.core.UriToEntityConverter;
+import org.springframework.data.rest.core.mapping.ResourceMappings;
 import org.springframework.data.rest.core.mapping.ResourceMetadata;
 import org.springframework.data.rest.core.support.EntityLookup;
 import org.springframework.data.rest.webmvc.EmbeddedResourcesAssembler;
 import org.springframework.data.rest.webmvc.PersistentEntityResource;
 import org.springframework.data.rest.webmvc.mapping.Associations;
 import org.springframework.data.rest.webmvc.mapping.LinkCollector;
-import org.springframework.data.util.CastUtils;
-import org.springframework.data.util.TypeInformation;
 import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.Links;
@@ -97,10 +101,13 @@ import com.fasterxml.jackson.databind.util.NameTransformer;
  * @author Oliver Gierke
  * @author Greg Turnquist
  * @author Alex Leigh
+ * @deprecated since 5.0, in favor of {@link PersistentEntityJacksonModule}.
  */
+@Deprecated(since = "5.0", forRemoval = true)
+@SuppressWarnings("NullAway")
 public class PersistentEntityJackson2Module extends SimpleModule {
 
-	private static final long serialVersionUID = -7289265674870906323L;
+	private static final @Serial long serialVersionUID = -7289265674870906323L;
 	private static final Logger LOG = LoggerFactory.getLogger(PersistentEntityJackson2Module.class);
 	private static final TypeDescriptor URI_DESCRIPTOR = TypeDescriptor.valueOf(URI.class);
 
@@ -328,7 +335,7 @@ public class PersistentEntityJackson2Module extends SimpleModule {
 	 */
 	static class NestedEntitySerializer extends StdSerializer<Object> {
 
-		private static final long serialVersionUID = -2327469118972125954L;
+		private static final @Serial long serialVersionUID = -2327469118972125954L;
 
 		private final PersistentEntities entities;
 		private final EmbeddedResourcesAssembler assembler;
@@ -485,19 +492,22 @@ public class PersistentEntityJackson2Module extends SimpleModule {
 		 * the customization currently (Jackson 2.9.9).
 		 *
 		 * @author Oliver Drotbohm
-		 * @see https://github.com/FasterXML/jackson-databind/issues/2367
+		 * @link <a href=
+		 *       "https://github.com/FasterXML/jackson-databind/issues/2367">https://github.com/FasterXML/jackson-databind/issues/2367</a>
 		 */
 		public static class ValueInstantiatorCustomizer {
 
-			public static final Field CONSTRUCTOR_ARGS_FIELD;
+			public static final @Nullable Field CONSTRUCTOR_ARGS_FIELD;
 
 			private final SettableBeanProperty[] properties;
-			private final StdValueInstantiator instantiator;
+			private final @Nullable StdValueInstantiator instantiator;
 
 			static {
 
 				CONSTRUCTOR_ARGS_FIELD = ReflectionUtils.findField(StdValueInstantiator.class, "_constructorArguments");
-				ReflectionUtils.makeAccessible(CONSTRUCTOR_ARGS_FIELD);
+				if (CONSTRUCTOR_ARGS_FIELD != null) {
+					ReflectionUtils.makeAccessible(CONSTRUCTOR_ARGS_FIELD);
+				}
 			}
 
 			ValueInstantiatorCustomizer(ValueInstantiator instantiator, DeserializationConfig config) {
@@ -527,7 +537,7 @@ public class PersistentEntityJackson2Module extends SimpleModule {
 					return;
 				}
 
-				properties[((CreatorProperty) property).getCreatorIndex()] = property;
+				properties[property.getCreatorIndex()] = property;
 			}
 
 			/**
@@ -539,7 +549,7 @@ public class PersistentEntityJackson2Module extends SimpleModule {
 			 */
 			BeanDeserializerBuilder conclude(BeanDeserializerBuilder builder) {
 
-				if (instantiator == null) {
+				if (instantiator == null || CONSTRUCTOR_ARGS_FIELD == null) {
 					return builder;
 				}
 
@@ -559,14 +569,14 @@ public class PersistentEntityJackson2Module extends SimpleModule {
 			}
 
 			CollectionLikeType collectionType = config.getTypeFactory().constructCollectionLikeType(property.getType(),
-					property.getActualType().getType());
+					property.getRequiredActualType().getType());
 			CollectionValueInstantiator instantiator = new CollectionValueInstantiator(property);
 			return new CollectionDeserializer(collectionType, elementDeserializer, null, instantiator);
 		}
 	}
 
 	/**
-	 * Custom {@link JsonDeserializer} to interpret {@link String} values as URIs and resolve them using a
+	 * Custom {@link StdDeserializer} to interpret {@link String} values as URIs and resolve them using a
 	 * {@link UriToEntityConverter}.
 	 *
 	 * @author Oliver Gierke
@@ -574,7 +584,7 @@ public class PersistentEntityJackson2Module extends SimpleModule {
 	 */
 	public static class UriStringDeserializer extends StdDeserializer<Object> {
 
-		private static final long serialVersionUID = -2175900204153350125L;
+		private static final @Serial long serialVersionUID = -2175900204153350125L;
 		private static final String UNEXPECTED_VALUE = "Expected URI cause property %s points to the managed domain type";
 
 		private final Class<?> type;
@@ -596,7 +606,8 @@ public class PersistentEntityJackson2Module extends SimpleModule {
 		}
 
 		@Override
-		public Object deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+		public @Nullable Object deserialize(JsonParser jp, DeserializationContext ctxt)
+				throws IOException, JsonProcessingException {
 
 			String source = jp.getValueAsString();
 
@@ -623,7 +634,8 @@ public class PersistentEntityJackson2Module extends SimpleModule {
 		 *      com.fasterxml.jackson.databind.jsontype.TypeDeserializer)
 		 */
 		@Override
-		public Object deserializeWithType(JsonParser jp, DeserializationContext ctxt, TypeDeserializer typeDeserializer)
+		public @Nullable Object deserializeWithType(JsonParser jp, DeserializationContext ctxt,
+				TypeDeserializer typeDeserializer)
 				throws IOException {
 			return deserialize(jp, ctxt);
 		}
@@ -694,7 +706,7 @@ public class PersistentEntityJackson2Module extends SimpleModule {
 		ProjectionResource toModel(TargetAware value) {
 
 			Object target = value.getTarget();
-			ResourceMetadata metadata = associations.getMetadataFor(value.getTargetClass());
+			ResourceMetadata metadata = associations.getMetadataFor(Objects.requireNonNull(value.getTargetClass()));
 			Links links = metadata != null && metadata.isExported() ? collector.getLinksFor(target) : Links.NONE;
 
 			EntityModel<TargetAware> resource = invoker.invokeProcessorsFor(EntityModel.of(value, links));
@@ -810,7 +822,7 @@ public class PersistentEntityJackson2Module extends SimpleModule {
 
 	private static class RepositoryInvokingDeserializer extends StdScalarDeserializer<Object> {
 
-		private static final long serialVersionUID = -3033458643050330913L;
+		private static final @Serial long serialVersionUID = -3033458643050330913L;
 		private final RepositoryInvoker invoker;
 
 		private RepositoryInvokingDeserializer(RepositoryInvokerFactory factory, PersistentProperty<?> property) {
@@ -830,7 +842,7 @@ public class PersistentEntityJackson2Module extends SimpleModule {
 
 	public static class LookupObjectSerializer extends ToStringSerializer {
 
-		private static final long serialVersionUID = -3033458643050330913L;
+		private static final @Serial long serialVersionUID = -3033458643050330913L;
 
 		private final PluginRegistry<EntityLookup<?>, Class<?>> lookups;
 
@@ -859,10 +871,11 @@ public class PersistentEntityJackson2Module extends SimpleModule {
 			}
 		}
 
+		@SuppressWarnings("unchecked")
 		private Object getLookupKey(Object value) {
 
 			return lookups.getPluginFor(value.getClass()) //
-					.<EntityLookup<Object>> map(CastUtils::cast)
+					.map(it -> (EntityLookup<Object>) it)
 					.orElseThrow(() -> new IllegalArgumentException("No EntityLookup found for " + value.getClass().getName()))
 					.getResourceIdentifier(value);
 		}

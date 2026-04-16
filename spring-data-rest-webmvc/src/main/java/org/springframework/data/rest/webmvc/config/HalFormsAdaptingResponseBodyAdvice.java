@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 the original author or authors.
+ * Copyright 2021-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,19 +18,18 @@ package org.springframework.data.rest.webmvc.config;
 import java.util.Arrays;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.MethodParameter;
 import org.springframework.hateoas.MediaTypes;
 import org.springframework.hateoas.RepresentationModel;
-import org.springframework.hateoas.server.mvc.TypeConstrainedMappingJackson2HttpMessageConverter;
+import org.springframework.hateoas.server.mvc.TypeConstrainedJacksonJsonHttpMessageConverter;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
-import org.springframework.lang.Nullable;
 import org.springframework.web.HttpMediaTypeNotAcceptableException;
-import org.springframework.web.servlet.mvc.method.annotation.RequestResponseBodyMethodProcessor;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
 /**
@@ -42,18 +41,19 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 class HalFormsAdaptingResponseBodyAdvice<T extends RepresentationModel<T>>
 		implements ResponseBodyAdvice<RepresentationModel<T>> {
 
-	private static final Logger logger = LoggerFactory.getLogger(RequestResponseBodyMethodProcessor.class);
+	private static final Logger logger = LoggerFactory.getLogger(HalFormsAdaptingResponseBodyAdvice.class);
 	private static final String MESSAGE = "HalFormsRejectingResponseBodyAdvice - Changing content type to '%s' as no affordances were registered on the representation model to be rendered";
 	private static final List<MediaType> SUPPORTED_MEDIA_TYPES = Arrays.asList(MediaTypes.HAL_JSON,
 			MediaType.APPLICATION_JSON);
 
 	@Override
 	public boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
-		return TypeConstrainedMappingJackson2HttpMessageConverter.class.isAssignableFrom(converterType);
+		return TypeConstrainedJacksonJsonHttpMessageConverter.class.isAssignableFrom(converterType);
 	}
 
 	@Override
-	public RepresentationModel<T> beforeBodyWrite(@Nullable RepresentationModel<T> body, MethodParameter returnType,
+	public @Nullable RepresentationModel<T> beforeBodyWrite(@Nullable RepresentationModel<T> body,
+			MethodParameter returnType,
 			MediaType selectedContentType, Class<? extends HttpMessageConverter<?>> selectedConverterType,
 			ServerHttpRequest request, ServerHttpResponse response) {
 

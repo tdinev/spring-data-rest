@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2025 the original author or authors.
+ * Copyright 2012-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,17 +20,18 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.core.convert.ConversionFailedException;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.core.convert.converter.GenericConverter;
+import org.springframework.data.core.TypeInformation;
+import org.springframework.data.mapping.PersistentEntity;
 import org.springframework.data.mapping.context.PersistentEntities;
 import org.springframework.data.repository.support.Repositories;
 import org.springframework.data.repository.support.RepositoryInvokerFactory;
-import org.springframework.data.util.ReflectionUtils;
-import org.springframework.data.util.TypeInformation;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
+import org.springframework.data.util.ClassUtils;
 import org.springframework.util.Assert;
 
 /**
@@ -41,8 +42,9 @@ import org.springframework.util.Assert;
  */
 public class UriToEntityConverter implements GenericConverter {
 
-	private static final Class<?> ASSOCIATION_TYPE = ReflectionUtils
-			.loadIfPresent("org.jmolecules.ddd.types.Association", UriToEntityConverter.class.getClassLoader());
+	private static final @Nullable Class<?> ASSOCIATION_TYPE = ClassUtils
+			.loadIfPresent("org.jmolecules.ddd.types.Association",
+			UriToEntityConverter.class.getClassLoader());
 
 	private final PersistentEntities entities;
 	private final RepositoryInvokerFactory invokerFactory;
@@ -74,7 +76,7 @@ public class UriToEntityConverter implements GenericConverter {
 			var rawType = domainType.getType();
 			var entity = entities.getPersistentEntity(rawType);
 
-			entity.filter(it -> it.hasIdProperty()).ifPresent(it -> {
+			entity.filter(PersistentEntity::hasIdProperty).ifPresent(it -> {
 				convertiblePairs.add(new ConvertiblePair(URI.class, domainType.getType()));
 				registerIdentifierType(it.getRequiredIdProperty().getType());
 			});
@@ -95,7 +97,6 @@ public class UriToEntityConverter implements GenericConverter {
 		identifierTypes.add(type);
 	}
 
-	@NonNull
 	@Override
 	public Set<ConvertiblePair> getConvertibleTypes() {
 		return convertiblePairs;
@@ -120,15 +121,12 @@ public class UriToEntityConverter implements GenericConverter {
 
 		if (entity.isEmpty()) {
 			throw new ConversionFailedException(sourceType, targetType, source,
-					new IllegalArgumentException(
-							"No PersistentEntity information available for " + targetType.getType()));
+					new IllegalArgumentException("No PersistentEntity information available for " + targetType.getType()));
 		}
 
 		var segment = getIdentifierSegment(source, sourceType, targetType);
 
-		return invokerFactory.getInvokerFor(targetType.getType())
-				.invokeFindById(segment)
-				.orElse(null);
+		return invokerFactory.getInvokerFor(targetType.getType()).invokeFindById(segment).orElse(null);
 	}
 
 	private static String getIdentifierSegment(Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2025 the original author or authors.
+ * Copyright 2014-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.data.rest.core.Path;
 import org.springframework.util.Assert;
@@ -83,7 +85,7 @@ public class BaseUri {
 	 * @return the stripped lookup path with then the repository URI space or {@literal null} in case the lookup path is
 	 *         not pointing into the repository URI space.
 	 */
-	public String getRepositoryLookupPath(NativeWebRequest request) {
+	public @Nullable String getRepositoryLookupPath(NativeWebRequest request) {
 		return getRepositoryLookupPath(request.getNativeRequest(HttpServletRequest.class));
 	}
 
@@ -95,7 +97,9 @@ public class BaseUri {
 	 * @return the stripped lookup path with then the repository URI space or {@literal null} in case the lookup path is
 	 *         not pointing into the repository URI space.
 	 */
-	private String getRepositoryLookupPath(HttpServletRequest request) {
+	private @Nullable String getRepositoryLookupPath(@Nullable HttpServletRequest request) {
+
+		Assert.notNull(request, "Request must not be null!");
 
 		String lookupPath = URL_PATH_HELPER.getLookupPathForRequest(request);
 		return getRepositoryLookupPath(lookupPath);
@@ -109,7 +113,7 @@ public class BaseUri {
 	 * @return the stripped lookup path with then the repository URI space or {@literal null} in case the lookup path is
 	 *         not pointing into the repository URI space.
 	 */
-	public String getRepositoryLookupPath(String lookupPath) {
+	public @Nullable String getRepositoryLookupPath(String lookupPath) {
 
 		Assert.notNull(lookupPath, "Lookup path must not be null");
 

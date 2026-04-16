@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2025 the original author or authors.
+ * Copyright 2015-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,13 @@ package org.springframework.data.rest.core.support;
 
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.mapping.PersistentEntity;
 import org.springframework.data.mapping.PersistentProperty;
 import org.springframework.data.mapping.context.PersistentEntities;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.server.EntityLinks;
-import org.springframework.lang.Nullable;
 import org.springframework.plugin.core.PluginRegistry;
 import org.springframework.util.Assert;
 
@@ -73,7 +73,14 @@ public class DefaultSelfLinkProvider implements SelfLinkProvider {
 	public Link createSelfLinkFor(Class<?> type, Object reference) {
 
 		if (type.isInstance(reference)) {
-			return entityLinks.linkToItemResource(type, getResourceId(type, reference));
+
+			var identifier = getResourceId(type, reference);
+
+			if (identifier == null) {
+				throw new IllegalArgumentException("Cannot resolve identifier from reference %s".formatted(reference));
+			}
+
+			return entityLinks.linkToItemResource(type, identifier);
 		}
 
 		PersistentEntity<?, ?> entity = entities.getRequiredPersistentEntity(type);
@@ -85,17 +92,25 @@ public class DefaultSelfLinkProvider implements SelfLinkProvider {
 			identifier = getResourceId(type, conversionService.convert(identifier, type));
 		}
 
+		if (identifier == null) {
+			throw new IllegalArgumentException("Cannot resolve identifier from reference %s".formatted(reference));
+		}
+
 		return entityLinks.linkToItemResource(type, identifier);
 	}
 
 	/**
 	 * Returns the identifier to be used to create the self link URI.
 	 *
-	 * @param reference must not be {@literal null}.
-	 * @return
+	 * @param reference
+	 * @return can be {@literal null}.
 	 */
 	@Nullable
-	private Object getResourceId(Class<?> type, Object reference) {
+	private Object getResourceId(Class<?> type, @Nullable Object reference) {
+
+		if (reference == null) {
+			return null;
+		}
 
 		if (!lookups.hasPluginFor(type)) {
 			return entityIdentifierOrNull(reference);
@@ -107,7 +122,7 @@ public class DefaultSelfLinkProvider implements SelfLinkProvider {
 				.orElseGet(() -> entityIdentifierOrNull(reference));
 	}
 
-	private Object entityIdentifierOrNull(Object instance) {
+	private @Nullable Object entityIdentifierOrNull(Object instance) {
 
 		return entities.getRequiredPersistentEntity(instance.getClass()) //
 				.getIdentifierAccessor(instance) //

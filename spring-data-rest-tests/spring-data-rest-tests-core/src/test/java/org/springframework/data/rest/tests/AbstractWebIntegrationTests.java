@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2025 the original author or authors.
+ * Copyright 2013-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,8 @@
 package org.springframework.data.rest.tests;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.hamcrest.CoreMatchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import io.micrometer.observation.ObservationRegistry;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -42,7 +39,9 @@ import org.springframework.data.rest.webmvc.config.RepositoryRestMvcConfiguratio
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.LinkRelation;
 import org.springframework.hateoas.client.LinkDiscoverers;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.observation.ServerRequestObservationContext;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -51,6 +50,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
+import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import org.springframework.test.web.servlet.assertj.MvcTestResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.util.LinkedMultiValueMap;
@@ -84,85 +85,82 @@ public abstract class AbstractWebIntegrationTests {
 	@Autowired LinkDiscoverers discoverers;
 
 	protected TestMvcClient client;
-	protected MockMvc mvc;
+	protected MockMvc mockMvc;
+	protected MockMvcTester mvc;
 	protected ServerRequestObservationContext observationContext;
 
 	@BeforeEach
 	public void setUp() {
 		setupMockMvc();
-		this.client = new TestMvcClient(mvc, discoverers);
+		this.client = new TestMvcClient(mockMvc, discoverers);
 	}
 
 	protected void setupMockMvc() {
-		this.mvc = MockMvcBuilders.webAppContextSetup(context) //
+		this.mockMvc = MockMvcBuilders.webAppContextSetup(context) //
 				.defaultRequest(get("/").accept(TestMvcClient.DEFAULT_MEDIA_TYPE)) //
 				.addFilters(new FilterImplementation()) //
 				.build();
+		this.mvc = MockMvcTester.create(mockMvc);
 	}
 
 	protected MockHttpServletResponse postAndGet(Link link, Object payload, MediaType mediaType) throws Exception {
 
 		String href = link.isTemplated() ? link.expand().getHref() : link.getHref();
 
-		MockHttpServletResponse response = mvc.perform(post(href).content(payload.toString()).contentType(mediaType))//
-				.andExpect(status().isCreated())//
-				.andExpect(header().string("Location", is(notNullValue())))//
-				.andReturn().getResponse();
+		MvcTestResult result = mvc.perform(post(href).content(payload.toString()).contentType(mediaType));
+		assertThat(result).hasStatus(HttpStatus.CREATED).headers().containsHeader(HttpHeaders.LOCATION);
 
-		String content = response.getContentAsString();
+		String content = result.getResponse().getContentAsString();
 
 		if (StringUtils.hasText(content)) {
-			return response;
+			return result.getResponse();
 		}
 
-		return client.request(response.getHeader("Location"));
+		return client.request(result.getResponse().getHeader("Location"));
 	}
 
 	protected MockHttpServletResponse putAndGet(Link link, Object payload, MediaType mediaType) throws Exception {
 
 		String href = link.isTemplated() ? link.expand().getHref() : link.getHref();
 
-		MockHttpServletResponse response = mvc.perform(put(href).content(payload.toString()).contentType(mediaType))//
-				.andExpect(status().is2xxSuccessful())//
-				.andReturn().getResponse();
+		MvcTestResult result = mvc.perform(put(href).content(payload.toString()).contentType(mediaType));
+		assertThat(result).hasStatus2xxSuccessful();
 
+		MockHttpServletResponse response = result.getResponse();
 		return StringUtils.hasText(response.getContentAsString()) ? response : client.request(link);
 	}
 
-	protected MockHttpServletResponse putOnlyExpect5XXStatus(Link link, Object payload, MediaType mediaType)
+	protected MockHttpServletResponse putOnlyExpect4XXStatus(Link link, Object payload, MediaType mediaType)
 			throws Exception {
 
 		String href = link.isTemplated() ? link.expand().getHref() : link.getHref();
 
-		MockHttpServletResponse response = mvc.perform(put(href).content(payload.toString()).contentType(mediaType))//
-				.andExpect(status().is5xxServerError())//
-				.andReturn().getResponse();
+		MvcTestResult result = mvc.perform(put(href).content(payload.toString()).contentType(mediaType));
+		assertThat(result).hasStatus4xxClientError();
 
-		return StringUtils.hasText(response.getContentAsString()) ? response : client.request(link);
+		return result.getResponse();
 	}
 
 	protected MockHttpServletResponse patchAndGet(Link link, Object payload, MediaType mediaType) throws Exception {
 
 		String href = link.isTemplated() ? link.expand().getHref() : link.getHref();
 
-		MockHttpServletResponse response = mvc.perform(MockMvcRequestBuilders.request(HttpMethod.PATCH, href).//
-				content(payload.toString()).contentType(mediaType)).andExpect(status().is2xxSuccessful())//
-				.andReturn().getResponse();
+		MvcTestResult result = mvc.perform(MockMvcRequestBuilders.request(HttpMethod.PATCH, href).//
+				content(payload.toString()).contentType(mediaType));
+		assertThat(result).hasStatus2xxSuccessful();
 
-		return StringUtils.hasText(response.getContentAsString()) ? response : client.request(href);
+		return result.getResponse();
 	}
 
 	protected void deleteAndVerify(Link link) throws Exception {
 
 		String href = link.isTemplated() ? link.expand().getHref() : link.getHref();
 
-		mvc.perform(delete(href))//
-				.andExpect(status().isNoContent())//
-				.andReturn().getResponse();
+		MvcTestResult result = mvc.perform(delete(href));
+		assertThat(result).hasStatus(HttpStatus.NO_CONTENT);
 
 		// Check that the resource is unavailable after a DELETE
-		mvc.perform(get(href))//
-				.andExpect(status().isNotFound());
+		assertThat(mvc.perform(get(href))).hasStatus(HttpStatus.NOT_FOUND);//
 	}
 
 	protected Link assertHasContentLinkWithRel(LinkRelation relation, MockHttpServletResponse response) throws Exception {

@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.data</groupId>
 		<artifactId>spring-data-rest-tests</artifactId>
-		<version>4.5.0-SNAPSHOT</version>
+		<version>5.1.0-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 
@@ -14,7 +14,7 @@
 
 	<properties>
 		<java-module-name>spring.data.rest.tests.security</java-module-name>
-		<spring-security.version>6.4.2</spring-security.version>
+		<spring-security.version>7.0.0</spring-security.version>
 	</properties>
 
 	<dependencies>
@@ -22,7 +22,7 @@
 		<dependency>
 			<groupId>org.springframework.data</groupId>
 			<artifactId>spring-data-rest-tests-core</artifactId>
-			<version>4.5.0-SNAPSHOT</version>
+			<version>5.1.0-SNAPSHOT</version>
 			<type>test-jar</type>
 		</dependency>
 

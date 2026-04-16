@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2025 the original author or authors.
+ * Copyright 2014-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 package org.springframework.data.rest.core.projection;
+
+import org.jspecify.annotations.Nullable;
 
 /**
  * Interface to allow the lookup of a projection interface by source type and name. This allows the definition of
@@ -30,6 +32,7 @@ public interface ProjectionDefinitions {
 	 * @param name must not be {@literal null} or empty.
 	 * @return
 	 */
+	@Nullable
 	Class<?> getProjectionType(Class<?> sourceType, String name);
 
 	/**

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2025 the original author or authors.
+ * Copyright 2012-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 package org.springframework.data.rest.webmvc.json;
 
 import static org.assertj.core.api.Assertions.*;
+
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -54,7 +57,6 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.util.UriTemplate;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 
 /**
@@ -83,11 +85,11 @@ class PersistentEntitySerializationTests {
 
 		@Bean
 		@Override
-		public ObjectMapper objectMapper() {
+		public JsonMapper objectMapper() {
 
-			ObjectMapper objectMapper = super.objectMapper();
-			objectMapper.registerModule(new JacksonSerializers(new EnumTranslator(MessageResolver.DEFAULTS_ONLY)));
-			return objectMapper;
+			return super.objectMapper().rebuild()
+					.addModule(new JacksonSerializers(new EnumTranslator(MessageResolver.DEFAULTS_ONLY)))
+					.build();
 		}
 	}
 

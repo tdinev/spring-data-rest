@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2025 the original author or authors.
+ * Copyright 2015-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,14 @@ public abstract class EntityLookupSupport<T> implements EntityLookup<T> {
 	 * Creates a new {@link EntityLookupSupport} instance discovering the supported type from the generics signature.
 	 */
 	public EntityLookupSupport() {
-		this.domainType = GenericTypeResolver.resolveTypeArgument(getClass(), EntityLookup.class);
+		Class<?> type = GenericTypeResolver.resolveTypeArgument(getClass(), EntityLookup.class);
+
+		if (type == null) {
+			throw new IllegalStateException(
+					"Cannot determine type for '%s'. Make sure to use the generic signature of EntityLookup<T>."
+							.formatted(getClass().getName()));
+		}
+		this.domainType = type;
 	}
 
 	@Override

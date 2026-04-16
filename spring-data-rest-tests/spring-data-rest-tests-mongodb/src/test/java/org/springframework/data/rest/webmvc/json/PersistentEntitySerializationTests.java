@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2025 the original author or authors.
+ * Copyright 2012-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 package org.springframework.data.rest.webmvc.json;
 
 import static org.assertj.core.api.Assertions.*;
+
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -49,7 +51,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletWebRequest;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.ReadContext;
 
@@ -61,8 +62,11 @@ import com.jayway.jsonpath.ReadContext;
  * @author Oliver Gierke
  */
 @ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = { MongoDbRepositoryConfig.class, RepositoryTestsConfig.class,
-		PersistentEntitySerializationTests.TestConfig.class })
+@ContextConfiguration(classes = {
+		MongoDbRepositoryConfig.class,
+		RepositoryTestsConfig.class,
+		PersistentEntitySerializationTests.TestConfig.class
+})
 class PersistentEntitySerializationTests {
 
 	@Autowired ObjectMapper mapper;
@@ -76,10 +80,9 @@ class PersistentEntitySerializationTests {
 		@Override
 		public ObjectMapper objectMapper() {
 
-			ObjectMapper objectMapper = super.objectMapper();
-			objectMapper.registerModule(new JacksonSerializers(new EnumTranslator(MessageResolver.DEFAULTS_ONLY)));
-
-			return objectMapper;
+			return super.objectMapper().rebuild()
+					.addModule(new JacksonSerializers(new EnumTranslator(MessageResolver.DEFAULTS_ONLY)))
+					.build();
 		}
 	}
 

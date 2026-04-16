@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2025 the original author or authors.
+ * Copyright 2014-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 package org.springframework.data.rest.core.mapping;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.context.MessageSourceResolvable;
 
@@ -30,7 +32,7 @@ public abstract class ResolvableResourceDescriptionSupport implements ResourceDe
 	}
 
 	@Override
-	public String getDefaultMessage() {
+	public @Nullable String getDefaultMessage() {
 		return null;
 	}
 }

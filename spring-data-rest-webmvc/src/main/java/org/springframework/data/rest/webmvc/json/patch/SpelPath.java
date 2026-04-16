@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2025 the original author or authors.
+ * Copyright 2017-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,25 +23,24 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.core.CollectionFactory;
 import org.springframework.core.convert.TypeDescriptor;
-import org.springframework.data.mapping.PropertyPath;
-import org.springframework.data.mapping.PropertyReferenceException;
-import org.springframework.data.util.ClassTypeInformation;
-import org.springframework.data.util.TypeInformation;
+import org.springframework.data.core.PropertyPath;
+import org.springframework.data.core.PropertyReferenceException;
+import org.springframework.data.core.TypeInformation;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionException;
 import org.springframework.expression.spel.SpelEvaluationException;
 import org.springframework.expression.spel.SpelMessage;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ConcurrentReferenceHashMap;
 import org.springframework.util.StringUtils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Value object to represent a SpEL-backed patch path.
@@ -50,13 +49,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * @author Mark Paluch
  * @author Greg Turnquist
  */
+@SuppressWarnings("NullAway")
 class SpelPath {
 
 	private static final SpelExpressionParser SPEL_EXPRESSION_PARSER = new SpelExpressionParser();
 	private static final String APPEND_CHARACTER = "-";
 	private static final Map<String, UntypedSpelPath> UNTYPED_PATHS = new ConcurrentReferenceHashMap<>(32);
-
-	private static final ObjectMapper objectMapper = new ObjectMapper();
 
 	protected final String path;
 
@@ -126,11 +124,10 @@ class SpelPath {
 			Assert.notNull(path, "Path must not be null");
 			Assert.notNull(type, "Type must not be null");
 
-			return READ_PATHS.computeIfAbsent(CacheKey.of(type, this, context),
-					key -> {
-						String mapped = new JsonPointerMapping(context).forRead(key.path.path, type);
-						return new TypedSpelPath(mapped, key.type, context.getEvaluationContext());
-					});
+			return READ_PATHS.computeIfAbsent(CacheKey.of(type, this, context), key -> {
+				String mapped = new JsonPointerMapping(context).forRead(key.path.path, type);
+				return new TypedSpelPath(mapped, key.type, context.getEvaluationContext());
+			});
 		}
 
 		/**
@@ -144,11 +141,10 @@ class SpelPath {
 			Assert.notNull(path, "Path must not be null");
 			Assert.notNull(type, "Type must not be null");
 
-			return WRITE_PATHS.computeIfAbsent(CacheKey.of(type, this, context),
-					key -> {
-						String mapped = new JsonPointerMapping(context).forWrite(key.path.path, type);
-						return new TypedSpelPath(mapped, key.type, context.getEvaluationContext());
-					});
+			return WRITE_PATHS.computeIfAbsent(CacheKey.of(type, this, context), key -> {
+				String mapped = new JsonPointerMapping(context).forWrite(key.path.path, type);
+				return new TypedSpelPath(mapped, key.type, context.getEvaluationContext());
+			});
 		}
 
 		private static final class CacheKey {
@@ -214,7 +210,7 @@ class SpelPath {
 
 		Object removeFrom(Object target);
 
-		void addValue(Object target, Object value);
+		void addValue(Object target, @Nullable Object value);
 
 		void setValue(Object target, @Nullable Object value);
 
@@ -439,11 +435,11 @@ class SpelPath {
 			return new TypedSpelPath(path.substring(0, path.lastIndexOf('/')), type, context);
 		}
 
-		private TypeDescriptor getTypeDescriptor(Object target) {
+		private @Nullable TypeDescriptor getTypeDescriptor(Object target) {
 			return expression.getValueTypeDescriptor(context, target);
 		}
 
-		private Integer getTargetListIndex() {
+		private @Nullable Integer getTargetListIndex() {
 
 			String lastNode = path.substring(path.lastIndexOf('/') + 1);
 
@@ -585,7 +581,7 @@ class SpelPath {
 
 		private static final class SpelExpressionBuilder {
 
-			private static final TypeInformation<String> STRING_TYPE = ClassTypeInformation.from(String.class);
+			private static final TypeInformation<String> STRING_TYPE = TypeInformation.of(String.class);
 
 			private final @Nullable PropertyPath basePath;
 			private final Class<?> type;
@@ -721,7 +717,7 @@ class SpelPath {
 		}
 
 		@Override
-		public boolean equals(@Nullable final java.lang.Object o) {
+		public boolean equals(@Nullable Object o) {
 
 			if (o == this) {
 				return true;

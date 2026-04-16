@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2025 the original author or authors.
+ * Copyright 2012-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 package org.springframework.data.rest.webmvc.json;
 
 import static org.mockito.Mockito.*;
+
+import tools.jackson.databind.JacksonModule;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.Collections;
 import java.util.List;
@@ -41,7 +44,7 @@ import org.springframework.data.rest.core.support.SelfLinkProvider;
 import org.springframework.data.rest.webmvc.EmbeddedResourcesAssembler;
 import org.springframework.data.rest.webmvc.jpa.Person;
 import org.springframework.data.rest.webmvc.jpa.PersonRepository;
-import org.springframework.data.rest.webmvc.json.PersistentEntityJackson2Module.LookupObjectSerializer;
+import org.springframework.data.rest.webmvc.json.PersistentEntityJacksonModule.LookupObjectSerializer;
 import org.springframework.data.rest.webmvc.mapping.Associations;
 import org.springframework.data.rest.webmvc.mapping.DefaultLinkCollector;
 import org.springframework.data.rest.webmvc.mapping.LinkCollector;
@@ -53,18 +56,13 @@ import org.springframework.format.support.DefaultFormattingConversionService;
 import org.springframework.format.support.FormattingConversionService;
 import org.springframework.hateoas.mediatype.MessageResolver;
 import org.springframework.hateoas.mediatype.hal.DefaultCurieProvider;
-import org.springframework.hateoas.mediatype.hal.Jackson2HalModule;
+import org.springframework.hateoas.mediatype.hal.HalJacksonModule;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.hateoas.server.LinkRelationProvider;
 import org.springframework.hateoas.server.RepresentationModelProcessor;
 import org.springframework.hateoas.server.core.EvoInflectorLinkRelationProvider;
 import org.springframework.hateoas.server.mvc.RepresentationModelProcessorInvoker;
 import org.springframework.plugin.core.PluginRegistry;
-
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.Module;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * @author Jon Brisbin
@@ -114,7 +112,7 @@ class RepositoryTestsConfig {
 	}
 
 	@Bean
-	public Module persistentEntityModule() {
+	public JacksonModule persistentEntityModule() {
 
 		var conversionService = new DefaultConversionService();
 
@@ -132,25 +130,25 @@ class RepositoryTestsConfig {
 		Associations associations = new Associations(mappings, config());
 		LinkCollector collector = new DefaultLinkCollector(persistentEntities(), selfLinkProvider, associations);
 
-		return new PersistentEntityJackson2Module(associations, persistentEntities(), uriToEntityConverter, collector,
+		return new PersistentEntityJacksonModule(associations, persistentEntities(), uriToEntityConverter, collector,
 				invokerFactory, mock(LookupObjectSerializer.class),
 				new RepresentationModelProcessorInvoker(Collections.<RepresentationModelProcessor<?>> emptyList()),
 				new EmbeddedResourcesAssembler(persistentEntities(), associations, mock(ExcerptProjector.class)));
 	}
 
 	@Bean
-	public ObjectMapper objectMapper() {
+	public JsonMapper objectMapper() {
 
 		LinkRelationProvider relProvider = new EvoInflectorLinkRelationProvider();
-		ObjectMapper mapper = new ObjectMapper();
 
-		mapper.registerModule(new Jackson2HalModule());
-		mapper.registerModule(persistentEntityModule());
-		mapper.setHandlerInstantiator(new Jackson2HalModule.HalHandlerInstantiator(relProvider,
-				new DefaultCurieProvider(Collections.emptyMap()), MessageResolver.DEFAULTS_ONLY));
-		mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		mapper.setSerializationInclusion(Include.NON_EMPTY);
+		JsonMapper.Builder builder = JsonMapper.builder()
+				.addModule(new HalJacksonModule())
+				.addModule(persistentEntityModule())
+				.handlerInstantiator(new HalJacksonModule.HalHandlerInstantiator(relProvider,
+						new DefaultCurieProvider(Collections.emptyMap()), MessageResolver.DEFAULTS_ONLY));
 
-		return mapper;
+		// builder.changeDefaultPropertyInclusion(it -> it.withValueInclusion(Include.NON_NULL));
+
+		return builder.build();
 	}
 }

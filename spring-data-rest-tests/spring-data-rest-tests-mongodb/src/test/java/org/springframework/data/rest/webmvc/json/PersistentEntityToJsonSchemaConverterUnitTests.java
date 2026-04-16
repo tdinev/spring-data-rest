@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2025 the original author or authors.
+ * Copyright 2014-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package org.springframework.data.rest.webmvc.json;
 import static org.assertj.core.api.Assertions.*;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.*;
+
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,8 +52,6 @@ import org.springframework.hateoas.mediatype.MessageResolver;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 
@@ -191,12 +191,7 @@ class PersistentEntityToJsonSchemaConverterUnitTests {
 	}
 
 	private String writeSchemaFor(Class<?> type) {
-
-		try {
-			return objectMapper.writeValueAsString(converter.convert(type));
-		} catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+		return objectMapper.writeValueAsString(converter.convert(type));
 	}
 
 	@SuppressWarnings("rawtypes")

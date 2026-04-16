@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2025 the original author or authors.
+ * Copyright 2012-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.data.mapping.PersistentEntity;
 import org.springframework.data.mapping.PersistentProperty;
 import org.springframework.data.mapping.PersistentPropertyAccessor;
@@ -59,7 +60,7 @@ public class PersistentEntityResource extends EntityModel<Object> {
 	 * @param embeddeds can be {@literal null}.
 	 */
 	private PersistentEntityResource(PersistentEntity<?, ?> entity, Object content, Iterable<Link> links,
-			Iterable<EmbeddedWrapper> embeddeds, boolean isNew, boolean nested) {
+			@Nullable Iterable<EmbeddedWrapper> embeddeds, boolean isNew, boolean nested) {
 
 		super(content, links);
 
@@ -90,6 +91,7 @@ public class PersistentEntityResource extends EntityModel<Object> {
 	 *
 	 * @return
 	 */
+	@JsonIgnore
 	public PersistentEntity<?, ? extends PersistentProperty<?>> getPersistentEntity() {
 		return entity;
 	}
@@ -150,7 +152,7 @@ public class PersistentEntityResource extends EntityModel<Object> {
 		private final PersistentEntity<?, ?> entity;
 		private final List<Link> links = new ArrayList<Link>();
 
-		private Iterable<EmbeddedWrapper> embeddeds;
+		private @Nullable Iterable<EmbeddedWrapper> embeddeds;
 
 		/**
 		 * Creates a new {@link Builder} instance for the given content and {@link PersistentEntity}.
@@ -175,7 +177,7 @@ public class PersistentEntityResource extends EntityModel<Object> {
 		 * @param resources can be {@literal null}.
 		 * @return the builder
 		 */
-		public Builder withEmbedded(Iterable<EmbeddedWrapper> resources) {
+		public Builder withEmbedded(@Nullable Iterable<EmbeddedWrapper> resources) {
 
 			this.embeddeds = resources == null ? null : new NoLinksResources<EmbeddedWrapper>(resources);
 			return this;

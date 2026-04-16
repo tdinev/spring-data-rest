@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2025 the original author or authors.
+ * Copyright 2012-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.data.repository.support.Repositories;
@@ -60,6 +62,7 @@ import org.springframework.web.util.pattern.PathPatternParser;
  * @author Oliver Gierke
  * @author Mark Paluch
  */
+@SuppressWarnings("NullAway")
 public class RepositoryRestHandlerMapping extends BasePathAwareHandlerMapping {
 
 	public static final HttpMethods DEFAULT_ALLOWED_METHODS = HttpMethods.none()
@@ -121,7 +124,7 @@ public class RepositoryRestHandlerMapping extends BasePathAwareHandlerMapping {
 	/**
 	 * @param jpaHelper the jpaHelper to set
 	 */
-	public void setJpaHelper(JpaHelper jpaHelper) {
+	public void setJpaHelper(@Nullable JpaHelper jpaHelper) {
 		this.jpaHelper = Optional.ofNullable(jpaHelper);
 	}
 
@@ -135,7 +138,8 @@ public class RepositoryRestHandlerMapping extends BasePathAwareHandlerMapping {
 	}
 
 	@Override
-	protected HandlerMethod lookupHandlerMethod(String lookupPath, HttpServletRequest request) throws Exception {
+	protected @Nullable HandlerMethod lookupHandlerMethod(String lookupPath, HttpServletRequest request)
+			throws Exception {
 
 		HandlerMethod handlerMethod = super.lookupHandlerMethod(lookupPath, request);
 
@@ -162,7 +166,7 @@ public class RepositoryRestHandlerMapping extends BasePathAwareHandlerMapping {
 	}
 
 	@Override
-	protected HandlerMethod handleNoMatch(Set<RequestMappingInfo> requestMappingInfos, String lookupPath,
+	protected @Nullable HandlerMethod handleNoMatch(Set<RequestMappingInfo> requestMappingInfos, String lookupPath,
 			HttpServletRequest request) throws ServletException {
 		return null;
 	}
@@ -337,7 +341,7 @@ public class RepositoryRestHandlerMapping extends BasePathAwareHandlerMapping {
 		 * @param repositoryInterface the repository interface
 		 * @return {@link CorsConfiguration} or {@literal null}.
 		 */
-		protected CorsConfiguration createConfiguration(Class<?> repositoryInterface) {
+		protected @Nullable CorsConfiguration createConfiguration(Class<?> repositoryInterface) {
 
 			CrossOrigin typeAnnotation = AnnotatedElementUtils.findMergedAnnotation(repositoryInterface, CrossOrigin.class);
 

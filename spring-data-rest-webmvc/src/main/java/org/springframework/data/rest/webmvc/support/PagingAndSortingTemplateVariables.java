@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2025 the original author or authors.
+ * Copyright 2015-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 package org.springframework.data.rest.webmvc.support;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.MethodParameter;
 import org.springframework.hateoas.TemplateVariables;
@@ -35,7 +37,7 @@ public interface PagingAndSortingTemplateVariables extends UriComponentsContribu
 	 * @param components must not be {@literal null}.
 	 * @return
 	 */
-	TemplateVariables getPaginationTemplateVariables(MethodParameter parameter, UriComponents components);
+	TemplateVariables getPaginationTemplateVariables(@Nullable MethodParameter parameter, UriComponents components);
 
 	/**
 	 * Returns the {@link TemplateVariables} for sorting.
@@ -44,5 +46,5 @@ public interface PagingAndSortingTemplateVariables extends UriComponentsContribu
 	 * @param components must not be {@literal null}.
 	 * @return
 	 */
-	TemplateVariables getSortTemplateVariables(MethodParameter parameter, UriComponents components);
+	TemplateVariables getSortTemplateVariables(@Nullable MethodParameter parameter, UriComponents components);
 }

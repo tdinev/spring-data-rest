@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2025 the original author or authors.
+ * Copyright 2022-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,9 @@ package org.springframework.data.rest.webmvc.json.patch;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
-import org.springframework.data.mapping.PropertyPath;
-import org.springframework.data.mapping.PropertyReferenceException;
-import org.springframework.data.util.ClassTypeInformation;
-import org.springframework.data.util.TypeInformation;
+import org.springframework.data.core.PropertyPath;
+import org.springframework.data.core.PropertyReferenceException;
+import org.springframework.data.core.TypeInformation;
 import org.springframework.util.StringUtils;
 
 /**
@@ -76,7 +75,7 @@ class JsonPointerMapping {
 
 		PropertyPath base = null;
 		StringBuilder result = new StringBuilder();
-		TypeInformation<?> currentType = ClassTypeInformation.from(type);
+		TypeInformation<?> currentType = TypeInformation.of(type);
 
 		for (int i = 0; i < strings.length; i++) {
 
@@ -89,14 +88,14 @@ class JsonPointerMapping {
 			if (currentType != null && currentType.isMap()) {
 
 				result.append("/").append(segment);
-				currentType = currentType.getActualType();
+				currentType = currentType.getRequiredActualType();
 
 				continue;
 			}
 
-			if (segment.equals("-") || segment.matches("\\d+")) {
+			if (currentType != null && (segment.equals("-") || segment.matches("\\d+"))) {
 				result.append("/").append(segment);
-				currentType = currentType.getActualType();
+				currentType = currentType.getRequiredActualType();
 				continue;
 			}
 

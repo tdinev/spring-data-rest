@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2025 the original author or authors.
+ * Copyright 2012-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,9 @@
  */
 package org.springframework.data.rest.webmvc.json;
 
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.ser.std.ToStringSerializer;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,9 +29,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import org.jspecify.annotations.Nullable;
+
+import org.springframework.data.core.TypeInformation;
 import org.springframework.data.rest.core.config.JsonSchemaFormat;
-import org.springframework.data.util.ClassTypeInformation;
-import org.springframework.data.util.TypeInformation;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
@@ -38,14 +42,14 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+
 
 /**
  * Model class to render JSON schema documents.
  *
  * @author Jon Brisbin
  * @author Oliver Gierke
+ * @author Mark Paluch
  */
 @JsonInclude(Include.NON_EMPTY)
 public class JsonSchema {
@@ -115,13 +119,15 @@ public class JsonSchema {
 	 * @see <a href=
 	 *      "https://json-schema.org/latest/json-schema-core.html#anchor8">https://json-schema.org/latest/json-schema-core.html#anchor8</a>
 	 */
-	private static String toJsonSchemaType(TypeInformation<?> typeInformation) {
+	private static @Nullable String toJsonSchemaType(@Nullable TypeInformation<?> typeInformation) {
+
+		if (typeInformation == null) {
+			return null;
+		}
 
 		Class<?> type = typeInformation.getType();
 
-		if (type == null) {
-			return null;
-		} else if (typeInformation.isCollectionLike()) {
+		if (typeInformation.isCollectionLike()) {
 			return "array";
 		} else if (Boolean.class.equals(type) || boolean.class.equals(type)) {
 			return "boolean";
@@ -166,7 +172,7 @@ public class JsonSchema {
 	 */
 	static class Item {
 
-		private final String type;
+		private final @Nullable String type;
 		private final PropertiesContainer properties;
 
 		/**
@@ -181,7 +187,7 @@ public class JsonSchema {
 			this.properties = new PropertiesContainer(properties);
 		}
 
-		public String getType() {
+		public @Nullable String getType() {
 			return type;
 		}
 
@@ -262,7 +268,7 @@ public class JsonSchema {
 		}
 
 		static String typeKey(TypeInformation<?> type) {
-			return StringUtils.uncapitalize(type.getActualType().getType().getSimpleName());
+			return StringUtils.uncapitalize(type.getRequiredActualType().getType().getSimpleName());
 		}
 	}
 
@@ -276,7 +282,7 @@ public class JsonSchema {
 	abstract static class AbstractJsonSchemaProperty<T extends AbstractJsonSchemaProperty<T>> {
 
 		private final String name;
-		private final String title;
+		private final @Nullable String title;
 		private final boolean required;
 
 		private boolean readOnly;
@@ -285,7 +291,7 @@ public class JsonSchema {
 			this(name, null, required);
 		}
 
-		protected AbstractJsonSchemaProperty(String name, String title, boolean required) {
+		protected AbstractJsonSchemaProperty(String name, @Nullable String title, boolean required) {
 
 			this.name = name;
 			this.title = title;
@@ -298,7 +304,7 @@ public class JsonSchema {
 			return name;
 		}
 
-		public String getTitle() {
+		public @Nullable String getTitle() {
 			return title;
 		}
 
@@ -325,15 +331,16 @@ public class JsonSchema {
 	 */
 	public static class JsonSchemaProperty extends AbstractJsonSchemaProperty<JsonSchemaProperty> {
 
-		private static final TypeInformation<?> STRING_TYPE_INFORMATION = ClassTypeInformation.from(String.class);
+		private static final TypeInformation<?> STRING_TYPE_INFORMATION = TypeInformation.of(String.class);
 
 		public String description;
-		public String type;
-		public @JsonSerialize(using = ToStringSerializer.class) JsonSchemaFormat format;
-		public String pattern;
-		public Boolean uniqueItems;
-		public @JsonProperty("$ref") String reference;
-		public Map<String, String> items;
+		public @Nullable String type;
+		public @Nullable @JsonSerialize(using = ToStringSerializer.class) @com.fasterxml.jackson.databind.annotation.JsonSerialize(
+				using = com.fasterxml.jackson.databind.ser.std.ToStringSerializer.class) JsonSchemaFormat format;
+		public @Nullable String pattern;
+		public @Nullable Boolean uniqueItems;
+		public @Nullable @JsonProperty("$ref") String reference;
+		public @Nullable Map<String, @Nullable String> items;
 
 		JsonSchemaProperty(String name, String title, String description, boolean required) {
 
@@ -351,7 +358,7 @@ public class JsonSchema {
 		public JsonSchemaProperty withType(Class<?> type) {
 
 			Assert.notNull(type, "Type must not be null");
-			return with(ClassTypeInformation.from(type));
+			return with(TypeInformation.of(type));
 		}
 
 		/**

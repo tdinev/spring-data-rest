@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2025 the original author or authors.
+ * Copyright 2013-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 package org.springframework.data.rest.core.mapping;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.data.mapping.PersistentProperty;
 import org.springframework.http.HttpMethod;
@@ -46,6 +48,7 @@ public interface ResourceMetadata extends CollectionResourceMapping {
 	 * @param mappedPath must not be {@literal null} or empty.
 	 * @return the {@link PropertyAwareResourceMapping} for the given path or {@literal null} if none found.
 	 */
+	@Nullable
 	PropertyAwareResourceMapping getProperty(String mappedPath);
 
 	/**

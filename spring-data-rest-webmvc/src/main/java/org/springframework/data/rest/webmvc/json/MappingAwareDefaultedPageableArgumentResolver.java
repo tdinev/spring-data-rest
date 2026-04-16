@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2025 the original author or authors.
+ * Copyright 2016-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 package org.springframework.data.rest.webmvc.json;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.MethodParameter;
 import org.springframework.data.domain.PageRequest;
@@ -41,10 +43,10 @@ import org.springframework.web.method.support.ModelAndViewContainer;
  */
 public class MappingAwareDefaultedPageableArgumentResolver implements HandlerMethodArgumentResolver {
 
-	private final JacksonMappingAwareSortTranslator translator;
+	private final SortTranslator translator;
 	private final PageableHandlerMethodArgumentResolver delegate;
 
-	public MappingAwareDefaultedPageableArgumentResolver(JacksonMappingAwareSortTranslator translator,
+	public MappingAwareDefaultedPageableArgumentResolver(SortTranslator translator,
 			PageableHandlerMethodArgumentResolver delegate) {
 
 		Assert.notNull(translator, "JacksonMappingAwareSortTranslator must not be null");
@@ -60,8 +62,8 @@ public class MappingAwareDefaultedPageableArgumentResolver implements HandlerMet
 	}
 
 	@Override
-	public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer,
-			NativeWebRequest webRequest, WebDataBinderFactory binderFactory) throws Exception {
+	public @Nullable Object resolveArgument(MethodParameter parameter, @Nullable ModelAndViewContainer mavContainer,
+			NativeWebRequest webRequest, @Nullable WebDataBinderFactory binderFactory) throws Exception {
 
 		Pageable pageable = delegate.resolveArgument(parameter, mavContainer, webRequest, binderFactory);
 

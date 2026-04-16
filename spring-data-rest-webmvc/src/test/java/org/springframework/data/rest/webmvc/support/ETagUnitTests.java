@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2025 the original author or authors.
+ * Copyright 2014-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,7 +83,7 @@ class ETagUnitTests {
 
 		ETag one = ETag.from("1");
 		ETag two = ETag.from("2");
-		ETag nullETag = ETag.from((String) null);
+		ETag nullETag = ETag.NO_ETAG;
 
 		assertThat(one.equals(one)).isTrue();
 		assertThat(one.equals(two)).isFalse();
@@ -103,7 +103,7 @@ class ETagUnitTests {
 
 	@Test // DATAREST-160
 	void noETagReturnsNullForToString() {
-		assertThat(ETag.NO_ETAG.toString()).isNull();
+		assertThat(ETag.NO_ETAG.toString()).isEqualTo("NO_ETAG");
 	}
 
 	@Test // DATAREST-160
@@ -135,7 +135,7 @@ class ETagUnitTests {
 
 		HttpHeaders headers = ETag.NO_ETAG.addTo(new HttpHeaders());
 
-		assertThat(headers.containsKey("ETag")).isFalse();
+		assertThat(headers.getFirst("ETag")).isNull();
 	}
 
 	// tag::versioned-sample[]

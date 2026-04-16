@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2025 the original author or authors.
+ * Copyright 2014-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,10 @@
 package org.springframework.data.rest.webmvc.alps;
 
 import static org.springframework.hateoas.mediatype.alps.Alps.*;
+
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.introspect.AnnotatedMethod;
+import tools.jackson.databind.introspect.BeanPropertyDefinition;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -66,16 +70,13 @@ import org.springframework.http.HttpMethod;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
-import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
-
 /**
  * Converter to create Alps {@link Descriptor} instances for a {@link RootResourceInformation}.
  *
  * @author Oliver Gierke
  * @author Greg Turnquist
  */
+@SuppressWarnings("NullAway")
 public class RootResourceInformationToAlpsDescriptorConverter {
 
 	private static final List<HttpMethod> UNDOCUMENTED_METHODS = Arrays.asList(HttpMethod.OPTIONS, HttpMethod.HEAD);
@@ -319,10 +320,10 @@ public class RootResourceInformationToAlpsDescriptorConverter {
 			public void doWithPersistentProperty(PersistentProperty<?> property) {
 
 				BeanPropertyDefinition propertyDefinition = jackson.getDefinitionFor(property);
-				ResourceMapping propertyMapping = metadata.getMappingFor(property);
 
 				if (propertyDefinition != null) {
 
+					ResourceMapping propertyMapping = metadata.getMappingFor(property);
 					if (property.isIdProperty() && !configuration.isIdExposedFor(property.getOwner().getType())) {
 						return;
 					}

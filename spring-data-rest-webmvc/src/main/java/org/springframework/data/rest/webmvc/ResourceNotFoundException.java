@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2025 the original author or authors.
+ * Copyright 2012-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,10 @@
  */
 package org.springframework.data.rest.webmvc;
 
+import java.io.Serial;
+
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
@@ -27,17 +31,17 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @ResponseStatus(HttpStatus.NOT_FOUND)
 public class ResourceNotFoundException extends RuntimeException {
 
-	private static final long serialVersionUID = 7992904489502842099L;
+	private static final @Serial long serialVersionUID = 7992904489502842099L;
 
 	public ResourceNotFoundException() {
 		this("EntityRepresentationModel not found");
 	}
 
-	public ResourceNotFoundException(String message) {
+	public ResourceNotFoundException(@Nullable String message) {
 		this(message, null);
 	}
 
-	public ResourceNotFoundException(String message, Throwable cause) {
+	public ResourceNotFoundException(@Nullable String message, @Nullable Throwable cause) {
 		super(message, cause);
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2025 the original author or authors.
+ * Copyright 2012-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,12 @@
  */
 package org.springframework.data.rest.webmvc.json;
 
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.introspect.AnnotatedMember;
+import tools.jackson.databind.introspect.BeanPropertyDefinition;
+
+import java.io.Serial;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,12 +32,15 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.context.MessageSource;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.context.NoSuchMessageException;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.core.convert.converter.ConditionalGenericConverter;
+import org.springframework.data.core.TypeInformation;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mapping.PersistentEntity;
 import org.springframework.data.mapping.PersistentProperty;
@@ -49,17 +58,11 @@ import org.springframework.data.rest.webmvc.json.JsonSchema.EnumProperty;
 import org.springframework.data.rest.webmvc.json.JsonSchema.Item;
 import org.springframework.data.rest.webmvc.json.JsonSchema.JsonSchemaProperty;
 import org.springframework.data.rest.webmvc.mapping.Associations;
-import org.springframework.data.util.ClassTypeInformation;
 import org.springframework.data.util.Optionals;
-import org.springframework.data.util.TypeInformation;
 import org.springframework.hateoas.mediatype.MessageResolver;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
-import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
 
 /**
  * Converter to create {@link JsonSchema} instances for {@link PersistentEntity}s.
@@ -67,12 +70,14 @@ import com.fasterxml.jackson.databind.introspect.BeanPropertyDefinition;
  * @author Jon Brisbin
  * @author Oliver Gierke
  * @author Greg Turnquist
+ * @author Mark Paluch
  */
+@SuppressWarnings("NullAway")
 public class PersistentEntityToJsonSchemaConverter implements ConditionalGenericConverter {
 
 	private static final TypeDescriptor STRING_TYPE = TypeDescriptor.valueOf(String.class);
 	private static final TypeDescriptor SCHEMA_TYPE = TypeDescriptor.valueOf(JsonSchema.class);
-	private static final TypeInformation<?> STRING_TYPE_INFORMATION = ClassTypeInformation.from(String.class);
+	private static final TypeInformation<?> STRING_TYPE_INFORMATION = TypeInformation.of(String.class);
 
 	private final Set<ConvertiblePair> convertiblePairs = new HashSet<ConvertiblePair>();
 	private final Associations associations;
@@ -138,10 +143,12 @@ public class PersistentEntityToJsonSchemaConverter implements ConditionalGeneric
 	}
 
 	@Override
-	public JsonSchema convert(Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
+	public JsonSchema convert(@Nullable Object source, TypeDescriptor sourceType, TypeDescriptor targetType) {
+
+		Assert.notNull(source, "Source must not be null");
 
 		final PersistentEntity<?, ?> persistentEntity = entities.getRequiredPersistentEntity((Class<?>) source);
-		final ResourceMetadata metadata = associations.getMappings().getMetadataFor(persistentEntity.getType());
+		final ResourceMetadata metadata = associations.getMappings().getRequiredMetadataFor(persistentEntity.getType());
 
 		Definitions definitions = new Definitions();
 		List<AbstractJsonSchemaProperty<?>> propertiesFor = getPropertiesFor(persistentEntity.getType(), metadata,
@@ -260,7 +267,7 @@ public class PersistentEntityToJsonSchemaConverter implements ConditionalGeneric
 		}
 
 		return getPropertiesFor(property.getActualType(),
-				associations.getMappings().getMetadataFor(property.getActualType()), descriptors);
+				associations.getMappings().getRequiredMetadataFor(property.getActualType()), descriptors);
 	}
 
 	private ResourceDescription getDescriptionFor(PersistentProperty<?> property, ResourceMetadata metadata) {
@@ -289,12 +296,12 @@ public class PersistentEntityToJsonSchemaConverter implements ConditionalGeneric
 			this.properties = new ArrayList<AbstractJsonSchemaProperty<?>>();
 		}
 
-		public void register(JsonSchemaProperty property, TypeInformation<?> type) {
+		public void register(JsonSchemaProperty property, @Nullable TypeInformation<?> type) {
 			if (type == null) {
 				properties.add(property);
 				return;
 			}
-			JsonSerializer<?> serializer = metadata.getTypeSerializer(type.getType());
+			ValueSerializer<?> serializer = metadata.getTypeSerializer(type.getType());
 			if (serializer instanceof JsonSchemaPropertyCustomizer) {
 				properties.add(((JsonSchemaPropertyCustomizer) serializer).customize(property, type));
 				return;
@@ -351,7 +358,7 @@ public class PersistentEntityToJsonSchemaConverter implements ConditionalGeneric
 	 */
 	private static class ResolvableProperty extends DefaultMessageSourceResolvable {
 
-		private static final long serialVersionUID = -5603381674553244480L;
+		private static final @Serial long serialVersionUID = -5603381674553244480L;
 
 		/**
 		 * Creates a new {@link ResolvableProperty} for the given {@link BeanPropertyDefinition}.
@@ -384,7 +391,7 @@ public class PersistentEntityToJsonSchemaConverter implements ConditionalGeneric
 	 */
 	private static class ResolvableType extends DefaultMessageSourceResolvable {
 
-		private static final long serialVersionUID = -7199875272753949857L;
+		private static final @Serial long serialVersionUID = -7199875272753949857L;
 
 		/**
 		 * Creates a new {@link ResolvableType} for the given type.
@@ -424,14 +431,14 @@ public class PersistentEntityToJsonSchemaConverter implements ConditionalGeneric
 		@SuppressWarnings("rawtypes")
 		public TypeInformation<?> getPropertyType() {
 			return property.map(it -> (TypeInformation) it.getTypeInformation())
-					.orElseGet(() -> ClassTypeInformation.from(definition.getPrimaryMember().getRawType()));
+					.orElseGet(() -> TypeInformation.of(definition.getPrimaryMember().getRawType()));
 		}
 
 		public JsonSchemaProperty getSchemaProperty(ResourceDescription description, InternalMessageResolver resolver) {
 
 			JsonSchemaProperty result = getSchemaProperty(definition, getPropertyType(), description, resolver);
 
-			boolean isSyntheticProperty = !property.isPresent();
+			boolean isSyntheticProperty = property.isEmpty();
 			boolean isNotWritable = property.map(it -> !it.isWritable()).orElse(false);
 			boolean isJacksonReadOnly = property.map(it -> metadata.isReadOnly(it)).orElse(false);
 
@@ -485,7 +492,7 @@ public class PersistentEntityToJsonSchemaConverter implements ConditionalGeneric
 			this.configuration = configuration;
 		}
 
-		public String resolve(MessageSourceResolvable resolvable) {
+		public @Nullable String resolve(@Nullable MessageSourceResolvable resolvable) {
 
 			if (resolvable == null) {
 				return null;
@@ -512,6 +519,7 @@ public class PersistentEntityToJsonSchemaConverter implements ConditionalGeneric
 	 * @since 2.4
 	 */
 	private static class DefaultingMessageSourceResolvable implements MessageSourceResolvable {
+
 		private static Pattern SPLIT_CAMEL_CASE = Pattern.compile("(?<!(^|[A-Z]))(?=[A-Z])|(?<!^)(?=[A-Z][a-z])");
 		private final MessageSourceResolvable delegate;
 

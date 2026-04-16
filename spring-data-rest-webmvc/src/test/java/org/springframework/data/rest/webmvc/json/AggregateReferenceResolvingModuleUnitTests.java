@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 the original author or authors.
+ * Copyright 2021-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ package org.springframework.data.rest.webmvc.json;
 
 import static org.assertj.core.api.Assertions.*;
 
+import tools.jackson.databind.ObjectMapper;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -28,7 +30,6 @@ import org.springframework.data.rest.core.annotation.RestResource;
 import org.springframework.data.rest.core.mapping.PersistentEntitiesResourceMappings;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Unit tests for {@link AggregateReferenceResolvingModule}.
@@ -49,9 +50,10 @@ class AggregateReferenceResolvingModuleUnitTests {
 		PersistentEntities entities = PersistentEntities.of(context);
 		PersistentEntitiesResourceMappings mappings = new PersistentEntitiesResourceMappings(entities);
 
-		ObjectMapper mapper = new ObjectMapper()
+		ObjectMapper mapper = new ObjectMapper().rebuild()
 				.addMixIn(SomeType.class, SomeTypeMixin.class)
-				.registerModule(new AggregateReferenceResolvingModule(uriToEntityConverter, mappings));
+				.addModule(new AggregateReferenceResolvingModule(uriToEntityConverter, mappings))
+				.build();
 
 		assertThatNoException().isThrownBy(() -> {
 			mapper.readValue("{}", SomeType.class);

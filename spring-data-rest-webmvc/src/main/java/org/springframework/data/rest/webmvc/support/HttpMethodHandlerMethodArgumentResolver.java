@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2025 the original author or authors.
+ * Copyright 2014-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 package org.springframework.data.rest.webmvc.support;
 
 import jakarta.servlet.http.HttpServletRequest;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpMethod;
@@ -40,10 +42,15 @@ public enum HttpMethodHandlerMethodArgumentResolver implements HandlerMethodArgu
 	}
 
 	@Override
-	public HttpMethod resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer,
-			NativeWebRequest webRequest, WebDataBinderFactory binderFactory) throws Exception {
+	public HttpMethod resolveArgument(MethodParameter parameter, @Nullable ModelAndViewContainer mavContainer,
+			NativeWebRequest webRequest, @Nullable WebDataBinderFactory binderFactory) throws Exception {
 
 		HttpServletRequest httpServletRequest = webRequest.getNativeRequest(HttpServletRequest.class);
+
+		if (httpServletRequest == null) {
+			throw new IllegalStateException("No HttpServletRequest available to resolve HttpMethod argument");
+		}
+
 		return HttpMethod.valueOf(httpServletRequest.getMethod().trim().toUpperCase());
 	}
 }

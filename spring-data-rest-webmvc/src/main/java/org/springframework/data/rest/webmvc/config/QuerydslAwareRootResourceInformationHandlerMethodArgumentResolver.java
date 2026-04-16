@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2025 the original author or authors.
+ * Copyright 2015-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 
 import org.springframework.core.MethodParameter;
+import org.springframework.data.core.TypeInformation;
 import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 import org.springframework.data.querydsl.QuerydslRepositoryInvokerAdapter;
 import org.springframework.data.querydsl.binding.QuerydslBindings;
@@ -31,12 +32,11 @@ import org.springframework.data.repository.support.Repositories;
 import org.springframework.data.repository.support.RepositoryInvoker;
 import org.springframework.data.repository.support.RepositoryInvokerFactory;
 import org.springframework.data.rest.webmvc.RootResourceInformation;
-import org.springframework.data.util.ClassTypeInformation;
+import org.springframework.data.util.Pair;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 
-import com.mysema.commons.lang.Pair;
 import com.querydsl.core.types.Predicate;
 
 /**
@@ -44,6 +44,7 @@ import com.querydsl.core.types.Predicate;
  * controller methods.
  *
  * @author Oliver Gierke
+ * @author Mark Paluch
  * @since 2.4
  */
 class QuerydslAwareRootResourceInformationHandlerMethodArgumentResolver
@@ -91,7 +92,7 @@ class QuerydslAwareRootResourceInformationHandlerMethodArgumentResolver
 	private Optional<Pair<QuerydslPredicateExecutor<?>, Predicate>> getRepositoryAndPredicate(
 			QuerydslPredicateExecutor<?> repository, Class<?> domainType, Map<String, String[]> parameters) {
 
-		ClassTypeInformation<?> type = ClassTypeInformation.from(domainType);
+		TypeInformation<?> type = TypeInformation.of(domainType);
 
 		QuerydslBindings bindings = factory.createBindingsFor(type);
 		Predicate predicate = predicateBuilder.getPredicate(type, toMultiValueMap(parameters), bindings);

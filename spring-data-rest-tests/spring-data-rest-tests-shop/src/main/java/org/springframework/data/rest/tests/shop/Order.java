@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2025 the original author or authors.
+ * Copyright 2014-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.springframework.data.rest.tests.shop;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -93,7 +94,7 @@ public final class Order implements AggregateRoot<Order, OrderIdentifier> {
 	}
 
 	static final class OrderIdentifier implements Identifier, Serializable {
-		private static final long serialVersionUID = -3362660123468974881L;
+		private static final @Serial long serialVersionUID = -3362660123468974881L;
 		private final UUID id;
 
 		public OrderIdentifier(UUID id) {

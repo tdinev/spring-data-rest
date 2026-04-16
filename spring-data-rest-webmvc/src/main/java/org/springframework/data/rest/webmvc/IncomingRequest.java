@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2025 the original author or authors.
+ * Copyright 2014-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package org.springframework.data.rest.webmvc;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.ServerHttpRequest;
@@ -32,7 +34,7 @@ import org.springframework.util.Assert;
 public class IncomingRequest {
 
 	private final ServerHttpRequest request;
-	private final MediaType contentType;
+	private final @Nullable MediaType contentType;
 
 	/**
 	 * Creates a new {@link IncomingRequest} from {@link ServerHttpRequest}.

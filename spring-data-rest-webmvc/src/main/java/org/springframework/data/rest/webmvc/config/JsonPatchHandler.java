@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2025 the original author or authors.
+ * Copyright 2014-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,9 @@
  */
 package org.springframework.data.rest.webmvc.config;
 
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
+
 import java.io.InputStream;
 
 import org.springframework.data.rest.webmvc.IncomingRequest;
@@ -27,9 +30,6 @@ import org.springframework.data.rest.webmvc.json.patch.Patch;
 import org.springframework.data.rest.webmvc.util.InputStreamHttpInputMessage;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.util.Assert;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Component to apply JSON Patch and JSON Merge Patch payloads to existing domain objects. The implementation uses the

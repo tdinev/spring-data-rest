@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2025 the original author or authors.
+ * Copyright 2013-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,9 @@ import com.fasterxml.jackson.datatype.hibernate6.Hibernate6Module;
  * @author Jon Brisbin
  * @author Oliver Gierke
  * @author Mark Paluch
+ * @deprecated since 5.0, Hibernate 6 support is no longer provided Jackson 3.
  */
+@Deprecated(since = "5.0", forRemoval = true)
 public class Jackson2DatatypeHelper {
 
 	private static final boolean IS_HIBERNATE_AVAILABLE = ClassUtils.isPresent("org.hibernate.Version",

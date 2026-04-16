@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2025 the original author or authors.
+ * Copyright 2013-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.data.rest.core.mapping.ResourceMappings;
+import org.springframework.data.rest.core.mapping.ResourceMetadata;
 import org.springframework.hateoas.LinkRelation;
 import org.springframework.hateoas.server.LinkRelationProvider;
 import org.springframework.util.Assert;
@@ -28,7 +29,7 @@ import org.springframework.util.Assert;
  *
  * @author Oliver Gierke
  */
-@Order(Ordered.LOWEST_PRECEDENCE + 10)
+@Order(Ordered.LOWEST_PRECEDENCE - 10)
 public class RepositoryRelProvider implements LinkRelationProvider {
 
 	private final ObjectFactory<ResourceMappings> mappings;
@@ -46,16 +47,26 @@ public class RepositoryRelProvider implements LinkRelationProvider {
 
 	@Override
 	public LinkRelation getCollectionResourceRelFor(Class<?> type) {
-		return mappings.getObject().getMetadataFor(type).getRel();
+		return getMetadataFor(type).getRel();
 	}
 
 	@Override
 	public LinkRelation getItemResourceRelFor(Class<?> type) {
-		return mappings.getObject().getMetadataFor(type).getItemResourceRel();
+		return getMetadataFor(type).getItemResourceRel();
 	}
 
 	@Override
 	public boolean supports(LookupContext context) {
 		return mappings.getObject().hasMappingFor(context.getType());
+	}
+
+	private ResourceMetadata getMetadataFor(Class<?> type) {
+
+		ResourceMetadata metadata = mappings.getObject().getMetadataFor(type);
+
+		if (metadata == null) {
+			throw new IllegalStateException("No ResourceMetadata found for type: " + type.getName());
+		}
+		return metadata;
 	}
 }

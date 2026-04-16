@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2025 the original author or authors.
+ * Copyright 2014-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,11 @@
  */
 package org.springframework.data.rest.webmvc.support;
 
+import static org.assertj.core.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import org.junit.jupiter.api.Test;
+
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.Ordered;
@@ -67,7 +68,6 @@ class ExceptionHandlingCustomizationIntegrationTests extends AbstractWebIntegrat
 
 		Link link = client.discoverUnique("addresses");
 
-		mvc.perform(get(link.getHref())).//
-				andExpect(status().isInternalServerError());
+		assertThat(mvc.perform(get(link.getHref()))).hasStatus5xxServerError();
 	}
 }

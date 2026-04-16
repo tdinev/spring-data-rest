@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2025 the original author or authors.
+ * Copyright 2014-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import java.io.IOException;
+import java.io.Serial;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
@@ -77,6 +78,7 @@ import com.jayway.jsonpath.JsonPath;
  * @author Oliver Gierke
  * @author Valentin Rentschler
  */
+@SuppressWarnings("removal")
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class PersistentEntityJackson2ModuleUnitTests {
@@ -272,8 +274,10 @@ class PersistentEntityJackson2ModuleUnitTests {
 				.then(invocation -> invocation.getArgument(0));
 
 		var serializer = new PersistentEntityJackson2Module.ProjectionSerializer(collector, associations, invoker, false);
+		var projection = mock(SampleProjection.class);
+		when(projection.getTargetClass()).thenReturn((Class) SampleProjection.class);
 
-		assertThatNoException().isThrownBy(() -> serializer.toModel(mock(SampleProjection.class)));
+		assertThatNoException().isThrownBy(() -> serializer.toModel(projection));
 	}
 
 	/**
@@ -388,7 +392,7 @@ class PersistentEntityJackson2ModuleUnitTests {
 
 	static class CustomTypeSerializer extends StdSerializer<CustomType> {
 
-		private static final long serialVersionUID = -3841651446883968079L;
+		private static final @Serial long serialVersionUID = -3841651446883968079L;
 
 		public CustomTypeSerializer() {
 			super(CustomType.class);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2025 the original author or authors.
+ * Copyright 2013-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,7 +104,7 @@ public class RepositoryResourceMappings extends PersistentEntitiesResourceMappin
 
 		RepositoryInformation repositoryInformation = repositories.getRequiredRepositoryInformation(domainType);
 		List<MethodResourceMapping> mappings = new ArrayList<MethodResourceMapping>();
-		ResourceMetadata resourceMapping = getMetadataFor(domainType);
+		ResourceMetadata resourceMapping = getRequiredMetadataFor(domainType);
 
 		if (resourceMapping.isExported()) {
 			for (Method queryMethod : repositoryInformation.getQueryMethods()) {

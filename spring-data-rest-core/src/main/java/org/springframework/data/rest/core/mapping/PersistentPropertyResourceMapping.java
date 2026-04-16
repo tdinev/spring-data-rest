@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2025 the original author or authors.
+ * Copyright 2015-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.springframework.data.rest.core.mapping;
 
+import java.util.Objects;
 import java.util.Optional;
 
 import org.springframework.data.mapping.PersistentProperty;
@@ -78,10 +79,12 @@ class PersistentPropertyResourceMapping implements PropertyAwareResourceMapping 
 			return false;
 		}
 
-		ResourceMapping typeMapping = mappings.getMetadataFor(property.getAssociationTargetType());
+		Class<?> associationTargetType = Objects.requireNonNull(property.getAssociationTargetType());
+
+		ResourceMapping typeMapping = mappings.getMetadataFor(associationTargetType);
 
 		return typeMapping != null && typeMapping.isExported()
-				? annotation.map(it -> it.exported()).orElse(true)
+				? annotation.map(RestResource::exported).orElse(true)
 				: false;
 	}
 
@@ -94,6 +97,11 @@ class PersistentPropertyResourceMapping implements PropertyAwareResourceMapping 
 	public ResourceDescription getDescription() {
 
 		CollectionResourceMapping ownerTypeMapping = mappings.getMetadataFor(property.getOwner().getType());
+
+		if (ownerTypeMapping == null) {
+			throw new IllegalStateException("No mapping found for owner type: " + property.getOwner().getType());
+		}
+
 		ResourceDescription fallback = TypedResourceDescription.defaultFor(ownerTypeMapping.getItemResourceRel(), property);
 
 		return Optionals.<ResourceDescription> firstNonEmpty(//

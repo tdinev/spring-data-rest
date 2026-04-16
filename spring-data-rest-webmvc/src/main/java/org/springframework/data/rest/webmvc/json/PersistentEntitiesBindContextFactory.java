@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2025 the original author or authors.
+ * Copyright 2022-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,12 @@
  */
 package org.springframework.data.rest.webmvc.json;
 
+import tools.jackson.databind.ObjectMapper;
+
 import org.springframework.core.convert.ConversionService;
 import org.springframework.data.mapping.context.PersistentEntities;
 import org.springframework.data.rest.webmvc.json.patch.BindContext;
 import org.springframework.util.Assert;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * A {@link BindContextFactory} based on {@link PersistentEntities}.
@@ -49,4 +49,5 @@ public class PersistentEntitiesBindContextFactory implements BindContextFactory 
 	public BindContext getBindContextFor(ObjectMapper mapper) {
 		return new JacksonBindContext(entities, conversionService, mapper);
 	}
+
 }

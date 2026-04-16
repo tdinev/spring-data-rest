@@ -1,11 +1,11 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.springframework.data</groupId>
 	<artifactId>spring-data-rest-parent</artifactId>
-	<version>4.5.0-SNAPSHOT</version>
+	<version>5.1.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<name>Spring Data REST</name>
@@ -13,7 +13,7 @@
 	<parent>
 		<groupId>org.springframework.data.build</groupId>
 		<artifactId>spring-data-parent</artifactId>
-		<version>3.5.0-SNAPSHOT</version>
+		<version>4.1.0-SNAPSHOT</version>
 		<relativePath/>
 	</parent>
 
@@ -28,12 +28,12 @@
 		<project.type>multi</project.type>
 		<dist.id>spring-data-rest</dist.id>
 
-		<springdata.commons>3.5.0-SNAPSHOT</springdata.commons>
-		<springdata.jpa>3.5.0-SNAPSHOT</springdata.jpa>
-		<springdata.mongodb>4.5.0-SNAPSHOT</springdata.mongodb>
-		<springdata.keyvalue>3.5.0-SNAPSHOT</springdata.keyvalue>
+		<springdata.commons>4.1.0-SNAPSHOT</springdata.commons>
+		<springdata.jpa>4.1.0-SNAPSHOT</springdata.jpa>
+		<springdata.mongodb>5.1.0-SNAPSHOT</springdata.mongodb>
+		<springdata.keyvalue>4.1.0-SNAPSHOT</springdata.keyvalue>
 
-		<hibernate.version>6.5.2.Final</hibernate.version>
+		<hibernate.version>7.0.0.Beta1</hibernate.version>
 	</properties>
 
 	<developers>
@@ -112,6 +112,12 @@
 	</profiles>
 
 	<dependencies>
+
+		<dependency>
+			<groupId>org.springframework.data</groupId>
+			<artifactId>spring-data-commons</artifactId>
+			<version>${springdata.commons}</version>
+		</dependency>
 
 		<dependency>
 			<groupId>jakarta.validation</groupId>

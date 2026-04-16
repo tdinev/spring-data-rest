@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2025 the original author or authors.
+ * Copyright 2012-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 package org.springframework.data.rest.webmvc.config;
 
 import java.util.Map;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.MethodParameter;
 import org.springframework.data.mapping.PersistentEntity;
@@ -69,11 +71,16 @@ public class RootResourceInformationHandlerMethodArgumentResolver implements Han
 	}
 
 	@Override
-	public RootResourceInformation resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer,
-			NativeWebRequest webRequest, WebDataBinderFactory binderFactory) throws Exception {
+	public @Nullable RootResourceInformation resolveArgument(MethodParameter parameter,
+			@Nullable ModelAndViewContainer mavContainer, NativeWebRequest webRequest,
+			@Nullable WebDataBinderFactory binderFactory) throws Exception {
 
 		ResourceMetadata resourceMetadata = resourceMetadataResolver.resolveArgument(parameter, mavContainer, webRequest,
 				binderFactory);
+
+		if (resourceMetadata == null) {
+			return null;
+		}
 
 		Class<?> domainType = resourceMetadata.getDomainType();
 		RepositoryInvoker repositoryInvoker = invokerFactory.getInvokerFor(domainType);

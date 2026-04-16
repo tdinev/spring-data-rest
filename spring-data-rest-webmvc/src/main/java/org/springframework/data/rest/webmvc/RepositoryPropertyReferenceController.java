@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2025 the original author or authors.
+ * Copyright 2012-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import static java.util.stream.Collectors.*;
 import static org.springframework.data.rest.webmvc.RestMediaTypes.*;
 import static org.springframework.web.bind.annotation.RequestMethod.*;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,6 +29,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.function.Function;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.core.CollectionFactory;
@@ -54,13 +56,13 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.UnsupportedMediaTypeStatusException;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
@@ -72,7 +74,7 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
  * @author Ľubomír Varga
  */
 @RepositoryRestController
-@SuppressWarnings({ "unchecked" })
+@SuppressWarnings({ "NullAway", "unchecked" })
 class RepositoryPropertyReferenceController /*extends AbstractRepositoryRestController*/
 		implements ApplicationEventPublisherAware {
 
@@ -82,7 +84,7 @@ class RepositoryPropertyReferenceController /*extends AbstractRepositoryRestCont
 	private final Repositories repositories;
 	private final RepositoryInvokerFactory repositoryInvokerFactory;
 
-	private ApplicationEventPublisher publisher;
+	private @Nullable ApplicationEventPublisher publisher;
 
 	public RepositoryPropertyReferenceController(Repositories repositories,
 			RepositoryInvokerFactory repositoryInvokerFactory) {
@@ -142,9 +144,9 @@ class RepositoryPropertyReferenceController /*extends AbstractRepositoryRestCont
 				prop.wipeValue();
 			}
 
-			publisher.publishEvent(new BeforeLinkDeleteEvent(prop.accessor.getBean(), prop.propertyValue));
-			var result = repoRequest.getInvoker().invokeSave(prop.accessor.getBean());
-			publisher.publishEvent(new AfterLinkDeleteEvent(result, prop.propertyValue));
+			publishEvent(new BeforeLinkDeleteEvent(prop.accessor.getBean(), prop.propertyValue));
+			var result = repoRequest.getRequiredInvoker().invokeSave(prop.accessor.getBean());
+			publishEvent(new AfterLinkDeleteEvent(result, prop.propertyValue));
 
 			return (RepresentationModel<?>) null;
 
@@ -169,7 +171,7 @@ class RepositoryPropertyReferenceController /*extends AbstractRepositoryRestCont
 				for (Object obj : (Iterable<?>) it) {
 
 					IdentifierAccessor accessor1 = prop.entity.getIdentifierAccessor(obj);
-					if (propertyId.equals(accessor1.getIdentifier().toString())) {
+					if (propertyId.equals(accessor1.getRequiredIdentifier().toString())) {
 
 						var resource1 = assemblers.toModel(obj);
 						headers.set("Content-Location", resource1.getRequiredLink(IanaLinkRelations.SELF).getHref());
@@ -235,13 +237,13 @@ class RepositoryPropertyReferenceController /*extends AbstractRepositoryRestCont
 
 	@RequestMapping(value = BASE_MAPPING, method = { PATCH, PUT, POST }, //
 			consumes = { MediaType.APPLICATION_JSON_VALUE, SPRING_DATA_COMPACT_JSON_VALUE, TEXT_URI_LIST_VALUE })
-	public ResponseEntity<? extends RepresentationModel<?>> createPropertyReference(
+	public ResponseEntity<?> createPropertyReference(
 			RootResourceInformation resourceInformation, HttpMethod requestMethod,
-			@RequestBody(required = false) CollectionModel<Object> incoming, @BackendId Serializable id,
+			@Nullable @RequestBody(required = false) CollectionModel<Object> incoming, @BackendId Serializable id,
 			@PathVariable String property) throws Exception {
 
 		var source = incoming == null ? CollectionModel.empty() : incoming;
-		var invoker = resourceInformation.getInvoker();
+		var invoker = resourceInformation.getRequiredInvoker();
 
 		Function<ReferencedProperty, RepresentationModel<?>> handler = prop -> {
 
@@ -249,7 +251,7 @@ class RepositoryPropertyReferenceController /*extends AbstractRepositoryRestCont
 
 			if (prop.property.isCollectionLike()) {
 
-				Collection<Object> collection = AUGMENTING_METHODS.contains(requestMethod) //
+				Collection<@Nullable Object> collection = AUGMENTING_METHODS.contains(requestMethod) //
 						? (Collection<Object>) prop.propertyValue //
 						: CollectionFactory.createCollection(propertyType, 0);
 
@@ -283,7 +285,8 @@ class RepositoryPropertyReferenceController /*extends AbstractRepositoryRestCont
 				}
 
 				if (!source.getLinks().hasSingleLink()) {
-					throw new IllegalArgumentException(
+
+					throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
 							"Must send only 1 link to update a property reference that isn't a List or a Map.");
 				}
 
@@ -291,9 +294,9 @@ class RepositoryPropertyReferenceController /*extends AbstractRepositoryRestCont
 						loadPropertyValue(prop.propertyType, source.getLinks().toList().get(0)));
 			}
 
-			publisher.publishEvent(new BeforeLinkSaveEvent(prop.accessor.getBean(), prop.propertyValue));
+			publishEvent(new BeforeLinkSaveEvent(prop.accessor.getBean(), prop.propertyValue));
 			var result = invoker.invokeSave(prop.accessor.getBean());
-			publisher.publishEvent(new AfterLinkSaveEvent(result, prop.propertyValue));
+			publishEvent(new AfterLinkSaveEvent(result, prop.propertyValue));
 
 			return null;
 		};
@@ -344,9 +347,9 @@ class RepositoryPropertyReferenceController /*extends AbstractRepositoryRestCont
 				prop.wipeValue();
 			}
 
-			publisher.publishEvent(new BeforeLinkDeleteEvent(prop.accessor.getBean(), it));
-			var result = repoRequest.getInvoker().invokeSave(prop.accessor.getBean());
-			publisher.publishEvent(new AfterLinkDeleteEvent(result, it));
+			publishEvent(new BeforeLinkDeleteEvent(prop.accessor.getBean(), it));
+			var result = repoRequest.getRequiredInvoker().invokeSave(prop.accessor.getBean());
+			publishEvent(new AfterLinkDeleteEvent(result, it));
 
 			return (RepresentationModel<?>) null;
 
@@ -357,7 +360,13 @@ class RepositoryPropertyReferenceController /*extends AbstractRepositoryRestCont
 		return ControllerUtils.toEmptyResponse(HttpStatus.NO_CONTENT);
 	}
 
-	private Object loadPropertyValue(Class<?> type, Link link) {
+	private void publishEvent(Object event) {
+		if (publisher != null) {
+			publisher.publishEvent(event);
+		}
+	}
+
+	private @Nullable Object loadPropertyValue(Class<?> type, Link link) {
 
 		var href = link.expand().getHref();
 		var id = href.substring(href.lastIndexOf('/') + 1);
@@ -380,7 +389,7 @@ class RepositoryPropertyReferenceController /*extends AbstractRepositoryRestCont
 		var property = mapping.getProperty();
 		resourceInformation.verifySupportedMethod(method, property);
 
-		var invoker = resourceInformation.getInvoker();
+		var invoker = resourceInformation.getRequiredInvoker();
 		var domainObj = invoker.invokeFindById(id);
 
 		domainObj.orElseThrow(() -> new ResourceNotFoundException());
@@ -397,10 +406,10 @@ class RepositoryPropertyReferenceController /*extends AbstractRepositoryRestCont
 		final PersistentEntity<?, ?> entity;
 		final PersistentProperty<?> property;
 		final Class<?> propertyType;
-		final Object propertyValue;
+		final @Nullable Object propertyValue;
 		final PersistentPropertyAccessor<?> accessor;
 
-		private ReferencedProperty(PersistentProperty<?> property, Object propertyValue,
+		private ReferencedProperty(PersistentProperty<?> property, @Nullable Object propertyValue,
 				PersistentPropertyAccessor<?> accessor) {
 
 			this.property = property;
@@ -425,15 +434,15 @@ class RepositoryPropertyReferenceController /*extends AbstractRepositoryRestCont
 	}
 
 	/**
-	 * Custom {@link RepresentationModel} to be used with maps as {@link EntityModel} doesn't properly unwrap
-	 * {@link Map}s due to some limitation in Jackson.
+	 * Custom {@link RepresentationModel} to be used with maps as {@link EntityModel} doesn't properly unwrap {@link Map}s
+	 * due to some limitation in Jackson.
 	 *
 	 * @author Oliver Drotbohm
 	 * @see https://github.com/FasterXML/jackson-databind/issues/171
 	 */
 	private static class MapModel extends RepresentationModel<MapModel> {
 
-		private Map<? extends Object, ? extends Object> content;
+		private final Map<? extends Object, ? extends Object> content;
 
 		public MapModel(Map<? extends Object, ? extends Object> content, Link... links) {
 
@@ -450,11 +459,11 @@ class RepositoryPropertyReferenceController /*extends AbstractRepositoryRestCont
 
 	static class HttpRequestMethodNotSupportedException extends RuntimeException {
 
-		private static final long serialVersionUID = 3704212056962845475L;
+		private static final @Serial long serialVersionUID = 3704212056962845475L;
 
 		private final HttpMethod rejectedMethod;
 		private final HttpMethod[] allowedMethods;
-		private final String message;
+		private final @Nullable String message;
 
 		private HttpRequestMethodNotSupportedException(HttpMethod rejectedMethod, HttpMethod[] allowedMethods,
 				@Nullable String message) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2025 the original author or authors.
+ * Copyright 2025-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,17 @@
  */
 package org.springframework.data.rest.webmvc.json;
 
+import tools.jackson.databind.ObjectMapper;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.MethodParameter;
 import org.springframework.data.domain.Sort;
@@ -35,8 +40,6 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.context.request.NativeWebRequest;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 /**
  * Translator for {@link Sort} arguments that is aware of Jackson-Mapping on domain classes. Jackson field names are
  * translated to {@link PersistentProperty} names. Domain class is looked up by resolving request URLs to mapped
@@ -44,9 +47,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *
  * @author Mark Paluch
  * @author Oliver Gierke
- * @since 2.6
+ * @since 5.0
  */
-public class JacksonMappingAwareSortTranslator {
+public class JacksonMappingAwareSortTranslator implements SortTranslator {
 
 	private final Repositories repositories;
 	private final DomainClassResolver domainClassResolver;
@@ -83,13 +86,14 @@ public class JacksonMappingAwareSortTranslator {
 	 * @return a {@link Sort} containing translated property names or {@literal null} the resulting {@link Sort} contains
 	 *         no properties.
 	 */
-	protected Sort translateSort(Sort input, MethodParameter parameter, NativeWebRequest webRequest) {
+	@Override
+	public Sort translateSort(Sort input, MethodParameter parameter, NativeWebRequest webRequest) {
 
 		Assert.notNull(input, "Sort must not be null");
 		Assert.notNull(parameter, "MethodParameter must not be null");
 		Assert.notNull(webRequest, "NativeWebRequest must not be null");
 
-		Class<?> domainClass = domainClassResolver.resolve(parameter.getMethod(), webRequest);
+		Class<?> domainClass = domainClassResolver.resolve(Objects.requireNonNull(parameter.getMethod()), webRequest);
 
 		if (domainClass == null) {
 			return input;
@@ -163,7 +167,7 @@ public class JacksonMappingAwareSortTranslator {
 			return filteredOrders.isEmpty() ? Sort.unsorted() : Sort.by(filteredOrders);
 		}
 
-		private String getMappedPropertyPath(PersistentEntity<?, ?> rootEntity, List<String> iteratorSource) {
+		private @Nullable String getMappedPropertyPath(PersistentEntity<?, ?> rootEntity, List<String> iteratorSource) {
 
 			List<String> persistentPropertyPath = mapPropertyPath(rootEntity, iteratorSource);
 
@@ -217,8 +221,8 @@ public class JacksonMappingAwareSortTranslator {
 		private final PersistentEntities persistentEntities;
 		private final ObjectMapper objectMapper;
 		private final Optional<PersistentEntity<?, ? extends PersistentProperty<?>>> currentType;
-		private final MappedProperties currentProperties;
-		private final WrappedProperties currentWrappedProperties;
+		private final MappedJacksonProperties currentProperties;
+		private final WrappedJacksonProperties currentWrappedProperties;
 
 		private TypedSegment(TypedSegment previous,
 				Optional<PersistentEntity<?, ? extends PersistentProperty<?>>> persistentEntity) {
@@ -232,11 +236,11 @@ public class JacksonMappingAwareSortTranslator {
 			this.objectMapper = objectMapper;
 			this.currentType = persistentEntity;
 			this.currentProperties = persistentEntity//
-					.map(it -> MappedProperties.forSerialization(it, objectMapper))//
-					.orElseGet(() -> MappedProperties.none());
+					.map(it -> MappedJacksonProperties.forSerialization(it, objectMapper))//
+					.orElseGet(() -> MappedJacksonProperties.none());
 			this.currentWrappedProperties = persistentEntity//
-					.map(it -> WrappedProperties.fromJacksonProperties(persistentEntities, it, objectMapper))//
-					.orElseGet(() -> WrappedProperties.none());
+					.map(it -> WrappedJacksonProperties.fromJacksonProperties(persistentEntities, it, objectMapper))//
+					.orElseGet(() -> WrappedJacksonProperties.none());
 
 		}
 

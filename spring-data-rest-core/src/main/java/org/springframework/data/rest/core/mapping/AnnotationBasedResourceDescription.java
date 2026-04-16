@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2025 the original author or authors.
+ * Copyright 2014-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package org.springframework.data.rest.core.mapping;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.data.rest.core.annotation.Description;
 import org.springframework.http.MediaType;
@@ -29,7 +31,7 @@ import org.springframework.util.StringUtils;
  */
 public class AnnotationBasedResourceDescription extends ResolvableResourceDescriptionSupport {
 
-	private final String message;
+	private final @Nullable String message;
 	private final ResourceDescription fallback;
 
 	/**
@@ -56,7 +58,7 @@ public class AnnotationBasedResourceDescription extends ResolvableResourceDescri
 	}
 
 	@Override
-	public String[] getCodes() {
+	public String @Nullable [] getCodes() {
 		return fallback.getCodes();
 	}
 
@@ -69,7 +71,7 @@ public class AnnotationBasedResourceDescription extends ResolvableResourceDescri
 	 * @return the mediaType
 	 */
 	public MediaType getType() {
-		return null;
+		return MediaType.ALL;
 	}
 
 	@Override

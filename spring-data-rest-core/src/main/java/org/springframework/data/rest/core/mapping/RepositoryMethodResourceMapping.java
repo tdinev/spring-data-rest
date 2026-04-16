@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-2025 the original author or authors.
+ * Copyright 2013-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ class RepositoryMethodResourceMapping implements MethodResourceMapping {
 	 * @param method must not be {@literal null}.
 	 * @param resourceMapping must not be {@literal null}.
 	 * @param metadata can be {@literal null}.
-	 * @param whether the methods are supposed to be exported by default.
+	 * @param exposeMethodsByDefault whether the methods are supposed to be exported by default.
 	 */
 	public RepositoryMethodResourceMapping(Method method, ResourceMapping resourceMapping, RepositoryMetadata metadata,
 			boolean exposeMethodsByDefault) {
@@ -139,7 +139,7 @@ class RepositoryMethodResourceMapping implements MethodResourceMapping {
 
 	@Override
 	public ResourceDescription getDescription() {
-		return null;
+		throw new UnsupportedOperationException("RepositoryMethodResourceMapping do not have a description");
 	}
 
 	@Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2025 the original author or authors.
+ * Copyright 2012-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.data.repository.support.Repositories;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
@@ -50,21 +52,21 @@ public class RepositoryRestConfiguration {
 
 	static final URI NO_URI = URI.create("");
 
-	private URI baseUri = NO_URI;
+	private final URI baseUri = NO_URI;
 	private URI basePath = NO_URI;
 	private int defaultPageSize = 20;
 	private int maxPageSize = 1000;
 	private String pageParamName = "page";
 	private String limitParamName = "size";
 	private String sortParamName = "sort";
-	private MediaType defaultMediaType = MediaTypes.HAL_JSON;
+	private MediaType defaultMediaType = MediaTypes.VND_HAL_JSON;
 	private boolean useHalAsDefaultJsonMediaType = true;
-	private Boolean returnBodyOnCreate = null;
-	private Boolean returnBodyOnUpdate = null;
-	private Boolean returnBodyOnDelete = null;
-	private List<Class<?>> exposeIdsFor = new ArrayList<Class<?>>();
-	private ResourceMappingConfiguration domainMappings = new ResourceMappingConfiguration();
-	private ResourceMappingConfiguration repoMappings = new ResourceMappingConfiguration();
+	private @Nullable Boolean returnBodyOnCreate = null;
+	private @Nullable Boolean returnBodyOnUpdate = null;
+	private @Nullable Boolean returnBodyOnDelete = null;
+	private final List<Class<?>> exposeIdsFor = new ArrayList<Class<?>>();
+	private final ResourceMappingConfiguration domainMappings = new ResourceMappingConfiguration();
+	private final ResourceMappingConfiguration repoMappings = new ResourceMappingConfiguration();
 	private RepositoryDetectionStrategy repositoryDetectionStrategy = RepositoryDetectionStrategies.DEFAULT;
 	private boolean exposeRepositoryMethodsByDefault = true;
 
@@ -298,7 +300,7 @@ public class RepositoryRestConfiguration {
 	 *          {@code Accept} header in the request.
 	 * @return
 	 */
-	public RepositoryRestConfiguration setReturnBodyForPutAndPost(Boolean returnBody) {
+	public RepositoryRestConfiguration setReturnBodyForPutAndPost(@Nullable Boolean returnBody) {
 
 		setReturnBodyOnCreate(returnBody);
 		setReturnBodyOnUpdate(returnBody);
@@ -315,7 +317,7 @@ public class RepositoryRestConfiguration {
 	 * @deprecated use {@link #returnBodyOnCreate(String)}
 	 */
 	@Deprecated
-	public Boolean isReturnBodyOnCreate() {
+	public @Nullable Boolean isReturnBodyOnCreate() {
 		return returnBodyOnCreate;
 	}
 
@@ -325,7 +327,7 @@ public class RepositoryRestConfiguration {
 	 * @param acceptHeader can be {@literal null} or empty.
 	 * @return
 	 */
-	public boolean returnBodyOnCreate(String acceptHeader) {
+	public boolean returnBodyOnCreate(@Nullable String acceptHeader) {
 		return returnBodyOnCreate == null ? StringUtils.hasText(acceptHeader) : returnBodyOnCreate;
 	}
 
@@ -336,7 +338,7 @@ public class RepositoryRestConfiguration {
 	 *          {@code Accept} header in the request.
 	 * @return {@literal this}
 	 */
-	public RepositoryRestConfiguration setReturnBodyOnCreate(Boolean returnBody) {
+	public RepositoryRestConfiguration setReturnBodyOnCreate(@Nullable Boolean returnBody) {
 		this.returnBodyOnCreate = returnBody;
 		return this;
 	}
@@ -350,7 +352,7 @@ public class RepositoryRestConfiguration {
 	 * @deprecated use {@link #returnBodyOnUpdate(String)}
 	 */
 	@Deprecated
-	public Boolean isReturnBodyOnUpdate() {
+	public @Nullable Boolean isReturnBodyOnUpdate() {
 		return returnBodyOnUpdate;
 	}
 
@@ -360,7 +362,7 @@ public class RepositoryRestConfiguration {
 	 * @param acceptHeader can be {@literal null} or empty.
 	 * @return
 	 */
-	public boolean returnBodyOnUpdate(String acceptHeader) {
+	public boolean returnBodyOnUpdate(@Nullable String acceptHeader) {
 		return returnBodyOnUpdate == null ? StringUtils.hasText(acceptHeader) : returnBodyOnUpdate;
 	}
 
@@ -371,7 +373,7 @@ public class RepositoryRestConfiguration {
 	 *          {@code Accept} header in the request.
 	 * @return {@literal this}
 	 */
-	public RepositoryRestConfiguration setReturnBodyOnUpdate(Boolean returnBodyOnUpdate) {
+	public RepositoryRestConfiguration setReturnBodyOnUpdate(@Nullable Boolean returnBodyOnUpdate) {
 		this.returnBodyOnUpdate = returnBodyOnUpdate;
 		return this;
 	}
@@ -383,7 +385,7 @@ public class RepositoryRestConfiguration {
 	 * @return
 	 * @since 4.1
 	 */
-	public boolean returnBodyOnDelete(String acceptHeader) {
+	public boolean returnBodyOnDelete(@Nullable String acceptHeader) {
 		return returnBodyOnDelete == null ? StringUtils.hasText(acceptHeader) : returnBodyOnDelete;
 	}
 
@@ -395,7 +397,7 @@ public class RepositoryRestConfiguration {
 	 * @return {@literal this}
 	 * @since 4.1
 	 */
-	public RepositoryRestConfiguration setReturnBodyOnDelete(Boolean returnBodyOnDelete) {
+	public RepositoryRestConfiguration setReturnBodyOnDelete(@Nullable Boolean returnBodyOnDelete) {
 		this.returnBodyOnDelete = returnBodyOnDelete;
 		return this;
 	}
@@ -420,7 +422,7 @@ public class RepositoryRestConfiguration {
 	 * @deprecated for removal in 3.5
 	 */
 	@Deprecated
-	public ResourceMapping getResourceMappingForDomainType(Class<?> domainType) {
+	public @Nullable ResourceMapping getResourceMappingForDomainType(Class<?> domainType) {
 		return domainMappings.getResourceMappingFor(domainType);
 	}
 
@@ -467,7 +469,7 @@ public class RepositoryRestConfiguration {
 	 * @deprecated for removal in 3.5
 	 */
 	@Deprecated
-	public ResourceMapping getResourceMappingForRepository(Class<?> repositoryInterface) {
+	public @Nullable ResourceMapping getResourceMappingForRepository(Class<?> repositoryInterface) {
 		return repoMappings.getResourceMappingFor(repositoryInterface);
 	}
 
@@ -487,7 +489,7 @@ public class RepositoryRestConfiguration {
 	 * @deprecated for removal in 3.5
 	 */
 	@Deprecated
-	public ResourceMapping findRepositoryMappingForPath(String path) {
+	public @Nullable ResourceMapping findRepositoryMappingForPath(String path) {
 		Class<?> type = repoMappings.findTypeForPath(path);
 		if (null == type) {
 			return null;
@@ -611,7 +613,7 @@ public class RepositoryRestConfiguration {
 	 * @since 2.5
 	 */
 	public RepositoryRestConfiguration setRepositoryDetectionStrategy(
-			RepositoryDetectionStrategy repositoryDetectionStrategy) {
+			@Nullable RepositoryDetectionStrategy repositoryDetectionStrategy) {
 
 		this.repositoryDetectionStrategy = repositoryDetectionStrategy == null ? RepositoryDetectionStrategies.DEFAULT
 				: repositoryDetectionStrategy;
@@ -632,7 +634,7 @@ public class RepositoryRestConfiguration {
 	/**
 	 * Sets whether to expose repository methods by default. If this is disabled, CRUD methods must be annotated with
 	 * {@link RestResource} explicitly to expose the default set of resources (opt-in). If this is set to {@literal true}
-	 * (default), repository methods methods are exposed unless explictly annotated with {@link RestResource} and
+	 * (default), repository methods are exposed unless explictly annotated with {@link RestResource} and
 	 * {@link RestResource#exported()} set to {@literal false}.
 	 *
 	 * @since 3.1

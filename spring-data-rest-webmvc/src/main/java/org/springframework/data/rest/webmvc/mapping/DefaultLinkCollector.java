@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2025 the original author or authors.
+ * Copyright 2021-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -180,6 +180,7 @@ public class DefaultLinkCollector implements LinkCollector {
 		}
 	}
 
+	@SuppressWarnings("NullAway")
 	private static class NestedLinkCollectingAssociationHandler implements SimpleAssociationHandler {
 
 		private final SelfLinkProvider selfLinks;
@@ -217,7 +218,7 @@ public class DefaultLinkCollector implements LinkCollector {
 				return;
 			}
 
-			ResourceMetadata metadata = associations.getMappings().getMetadataFor(property.getOwner().getType());
+			ResourceMetadata metadata = associations.getMappings().getRequiredMetadataFor(property.getOwner().getType());
 			ResourceMapping propertyMapping = metadata.getMappingFor(property);
 
 			for (Object element : asCollection(value)) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2025 the original author or authors.
+ * Copyright 2012-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,11 +127,7 @@ public class ValidatingRepositoryEventListener extends AbstractRepositoryEventLi
 		validate("afterDelete", entity);
 	}
 
-	private Errors validate(String event, Object entity) {
-
-		if (entity == null) {
-			return null;
-		}
+	private void validate(String event, Object entity) {
 
 		Errors errors = new ValidationErrors(entity, persistentEntitiesFactory.getObject());
 
@@ -146,8 +142,6 @@ public class ValidatingRepositoryEventListener extends AbstractRepositoryEventLi
 		if (errors.hasErrors()) {
 			throw new RepositoryConstraintViolationException(errors);
 		}
-
-		return errors;
 	}
 
 	private Collection<Validator> getValidatorsForEvent(String event) {
